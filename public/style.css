@@ -511,6 +511,10 @@ body {
   color: var(--ink-soft);
 }
 
+.profit-tile-emphasis .delivery-days {
+  color: rgba(255, 255, 255, 0.75);
+}
+
 #deliveryTable {
   margin-top: 0;
 }

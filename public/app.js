@@ -80,18 +80,25 @@ function applyFilter() {
   renderTable(filtered);
 }
 
+const CHARGEABLE_DAY_RATE = 825;
+
 function renderDeliveryEfficiency(jobs) {
   const withEstimate = jobs.filter(j => Number(j.estimate_hours) > 0);
   const overJobs = withEstimate.filter(j => Number(j.actual_hours) > Number(j.estimate_hours));
 
   const totalOverHours = overJobs.reduce((sum, j) => sum + (Number(j.actual_hours) - Number(j.estimate_hours)), 0);
   const totalOverDays = totalOverHours / 7.5;
+  const capacityValue = totalOverDays * CHARGEABLE_DAY_RATE;
 
   const statsEl = document.getElementById('deliveryStats');
   statsEl.innerHTML = `
     <div class="profit-tile">
       <span class="profit-label">Over-delivered hours</span>
       <span class="profit-value">${totalOverHours.toFixed(0)}h <span class="delivery-days">(~${totalOverDays.toFixed(0)} working days)</span></span>
+    </div>
+    <div class="profit-tile profit-tile-emphasis profit-tile-red">
+      <span class="profit-label">Value of that lost capacity</span>
+      <span class="profit-value">${money(capacityValue)} <span class="delivery-days">at £${CHARGEABLE_DAY_RATE}/day</span></span>
     </div>
     <div class="profit-tile">
       <span class="profit-label">Jobs currently over estimate</span>
