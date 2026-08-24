@@ -111,17 +111,50 @@ function synergist_job_phases(string $job): array
 
 /**
  * Individual expense/purchase line items logged against a job (costChargeCodeType
- * "P"). Excludes time entries (type "T") and doesn't include supplier
- * purchase invoices, which Synergist tracks separately — this is a partial
- * view of external costs, not the full reconciled total.
+ * "P"), plus any purchase orders raised but not yet invoiced (shown
+ * separately, tagged 'pending', at their estimated value — not counted in
+ * any actual-cost total). Excludes time entries (type "T") and doesn't
+ * include invoiced supplier purchases already covered by costscharges.
  */
 function synergist_job_cost_transactions(string $job): array
 {
-    $body = synergist_get(null, ['action' => 'costscharges', 'job' => $job, 'rows' => 300], 'jobs');
+    // poInvoiceDate is unreliable (often blank even once actually costed),
+    // so poCost — the actual cost recorded against the PO — is what
+    // determines whether it's genuinely still pending.
+    $poBody = synergist_get('purchaseorderlist', ['job' => $job], 'purchases');
+    $poNumbers = [];
 
     $transactions = [];
+    foreach ($poBody['data'] ?? [] as $po) {
+        $poNumbers[$po['poPONumber']] = true;
+        if ((float) ($po['poCost'] ?? 0) > 0) {
+            continue;
+        }
+        // "{EST}" is Synergist's placeholder for a budget/estimate line that
+        // was never turned into a real numbered PO sent to a supplier.
+        $poNumber = ($po['poPONumber'] ?? '') !== '{EST}' ? ($po['poPONumber'] ?? null) : null;
+        $transactions[] = [
+            'date' => $po['poDateCreated'] ?? null,
+            'description' => $po['poDescription'] ?? '',
+            'resource_name' => $po['poSupplierName'] ?? '',
+            'amount' => (float) ($po['poEstCost'] ?? 0),
+            'phase' => '',
+            'po_number' => $poNumber,
+            'pending' => true,
+        ];
+    }
+
+    $body = synergist_get(null, ['action' => 'costscharges', 'job' => $job, 'rows' => 300], 'jobs');
+
     foreach ($body['data'] ?? [] as $cost) {
         if (($cost['costChargeCodeType'] ?? '') === 'T') {
+            continue;
+        }
+        $chargeCode = $cost['costChargeCode'] ?? '';
+        $isKnownPo = isset($poNumbers[$chargeCode]);
+        // Skip the £0 placeholder line costscharges creates for a PO that's
+        // still pending — already shown above, not a second commitment.
+        if ($isKnownPo && (float) ($cost['costCostTotal'] ?? 0) == 0) {
             continue;
         }
         $transactions[] = [
@@ -130,6 +163,8 @@ function synergist_job_cost_transactions(string $job): array
             'resource_name' => $cost['costResourceName'] ?? '',
             'amount' => (float) ($cost['costCostTotal'] ?? 0),
             'phase' => $cost['costPhase'] ?? '',
+            'po_number' => $isKnownPo ? $chargeCode : null,
+            'pending' => false,
         ];
     }
 

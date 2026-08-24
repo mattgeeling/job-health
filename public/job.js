@@ -92,7 +92,14 @@ async function loadPhases(jobNumber) {
       return;
     }
 
-    body.innerHTML = phases.map(p => {
+    const visiblePhases = phases.filter(p => p.estimate_hours > 0 || p.actual_hours > 0);
+    if (visiblePhases.length === 0) {
+      note.textContent = 'No stages with hours logged yet.';
+      body.innerHTML = '';
+      return;
+    }
+
+    body.innerHTML = visiblePhases.map(p => {
       const usedPct = p.estimate_hours > 0 ? (p.actual_hours / p.estimate_hours) * 100 : 0;
       const risk = p.estimate_hours > 0 ? computeRisk(usedPct, null) : 'green';
       return `
@@ -122,11 +129,11 @@ async function loadCostTransactions(jobNumber) {
     }
 
     body.innerHTML = transactions.map(t => `
-      <tr>
+      <tr class="${t.pending ? 'cost-row-pending' : ''}">
         <td>${t.date || '—'}</td>
-        <td>${escapeHtml(t.description || '')}</td>
+        <td>${escapeHtml(t.description || '')}${t.po_number ? ` <span class="po-number">(PO ${escapeHtml(t.po_number)})</span>` : ''}</td>
         <td>${escapeHtml(t.resource_name || '')}</td>
-        <td>${moneyStr(t.amount)}</td>
+        <td>${moneyStr(t.amount)}${t.pending ? ' <span class="pct-chip amber">pending</span>' : ''}</td>
       </tr>
     `).join('');
   } catch (e) {

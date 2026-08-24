@@ -355,6 +355,17 @@ body {
   background: #fbfaf7;
 }
 
+.cost-row-pending {
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.po-number {
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-style: normal;
+}
+
 .job-row {
   cursor: pointer;
 }
