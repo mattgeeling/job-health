@@ -1,0 +1,133 @@
+:root {
+  --bg: #f6f5f2;
+  --surface: #ffffff;
+  --ink: #1f2430;
+  --ink-soft: #6b7280;
+  --border: #e4e1da;
+  --accent: #2d5c4d;
+  --red: #b3423a;
+  --red-bg: #fbe9e7;
+  --amber: #a3691a;
+  --amber-bg: #fdf1de;
+  --green: #2f7a4f;
+  --green-bg: #e7f3ea;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.topbar {
+  padding: 28px 32px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.topbar-sub {
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 32px 48px;
+}
+
+.summary {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.summary strong {
+  color: var(--ink);
+}
+
+.job-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+.job-table th {
+  text-align: left;
+  padding: 10px 12px;
+  background: #efece5;
+  color: var(--ink-soft);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
+}
+
+.job-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.job-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.job-table tbody tr:hover {
+  background: #fbfaf7;
+}
+
+.risk-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.risk-dot.red { background: var(--red); }
+.risk-dot.amber { background: var(--amber); }
+.risk-dot.green { background: var(--green); }
+
+.pct-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.pct-chip.red { background: var(--red-bg); color: var(--red); }
+.pct-chip.amber { background: var(--amber-bg); color: var(--amber); }
+.pct-chip.green { background: var(--green-bg); color: var(--green); }
+
+.job-title {
+  display: block;
+  color: var(--ink-soft);
+  font-size: 12px;
+  white-space: normal;
+}
+
+.job-number {
+  font-weight: 600;
+}
+
+.negative {
+  color: var(--red);
+}

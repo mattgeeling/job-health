@@ -1,0 +1,51 @@
+name: Deploy to IONOS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write production config
+        run: |
+          mkdir -p config
+          cat > config/config.php <<'PHP'
+          <?php
+          return [
+              'db' => [
+                  'host' => '${{ secrets.DB_HOST }}',
+                  'name' => '${{ secrets.DB_NAME }}',
+                  'user' => '${{ secrets.DB_USER }}',
+                  'pass' => '${{ secrets.DB_PASS }}',
+              ],
+              'synergist' => [
+                  'base_url' => 'https://fuzzyduck.synergist.cloud/jsonapi/',
+                  'user' => '${{ secrets.SYNERGIST_USER }}',
+                  'password' => '${{ secrets.SYNERGIST_PASSWORD }}',
+                  'company' => 1,
+                  'version' => 7,
+                  'open_live_jobs_view' => 134,
+                  'sync_secret' => '${{ secrets.SYNC_SECRET }}',
+              ],
+          ];
+          PHP
+
+      - name: Remove files that shouldn't be deployed
+        run: |
+          rm -rf .git .github db bin
+
+      - name: Deploy to IONOS via SFTP
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.6
+        with:
+          username: ${{ secrets.SFTP_USERNAME }}
+          server: ${{ secrets.SFTP_HOST }}
+          port: ${{ secrets.SFTP_PORT }}
+          password: ${{ secrets.SFTP_PASSWORD }}
+          local_path: './*'
+          remote_path: ${{ secrets.SFTP_TARGET_DIR }}
+          sftp_only: true

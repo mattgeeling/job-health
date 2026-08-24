@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Health</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>Job Health</h1>
+  <p class="topbar-sub">Open live jobs — margin &amp; hours tracker</p>
+</header>
+
+<main class="main">
+  <div class="summary" id="summary"></div>
+
+  <table class="job-table" id="jobTable">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Job</th>
+        <th>Client</th>
+        <th>Handler</th>
+        <th>Due</th>
+        <th>Quoted</th>
+        <th>Hours (act/est)</th>
+        <th>Hours %</th>
+        <th>Net margin</th>
+        <th>Net margin %</th>
+      </tr>
+    </thead>
+    <tbody id="jobTableBody"></tbody>
+  </table>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
