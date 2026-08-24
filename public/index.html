@@ -9,7 +9,7 @@
 <body>
 <header class="topbar">
   <h1>Job Health</h1>
-  <p class="topbar-sub">Open live jobs — margin &amp; hours tracker</p>
+  <p class="topbar-sub">Open live jobs — margin &amp; hours tracker &middot; <a class="back-link" href="leaderboard.html">Handler leaderboard &rarr;</a></p>
 </header>
 
 <main class="main">
@@ -25,6 +25,8 @@
 
   <div class="profit-panel" id="profitPanel"></div>
 
+  <div class="highlight-row" id="highlightRow"></div>
+
   <div class="summary" id="summary"></div>
 
   <table class="job-table" id="jobTable">
@@ -36,10 +38,11 @@
         <th>Handler</th>
         <th>Due</th>
         <th>Quoted</th>
-        <th>Net margin</th>
+        <th>Net profit</th>
         <th>Net margin %</th>
         <th>Hours (act/est)</th>
         <th>Hours %</th>
+        <th>Notes</th>
       </tr>
     </thead>
     <tbody id="jobTableBody"></tbody>

@@ -53,13 +53,15 @@ function populateHandlerFilter(jobs) {
   const select = document.getElementById('handlerFilter');
   const handlers = [...new Set(jobs.map(j => j.handler_name).filter(Boolean))].sort();
 
-  const saved = localStorage.getItem('jobHealthHandlerFilter') || '';
+  const fromUrl = new URLSearchParams(location.search).get('handler');
+  const saved = fromUrl || localStorage.getItem('jobHealthHandlerFilter') || '';
 
   select.innerHTML = '<option value="">All handlers</option>' +
     handlers.map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('');
 
   if (handlers.includes(saved)) {
     select.value = saved;
+    localStorage.setItem('jobHealthHandlerFilter', saved);
   }
 
   select.addEventListener('change', () => {
@@ -72,8 +74,34 @@ function applyFilter() {
   const handler = document.getElementById('handlerFilter').value;
   const filtered = handler ? allJobs.filter(j => j.handler_name === handler) : allJobs;
   renderProfitPanel(filtered);
+  renderHighlights(filtered);
   renderSummary(filtered);
   renderTable(filtered);
+}
+
+function renderHighlights(jobs) {
+  const el = document.getElementById('highlightRow');
+  const withMargin = jobs.filter(j => j.net_margin !== null && j.net_margin !== undefined);
+  if (withMargin.length === 0) {
+    el.innerHTML = '';
+    return;
+  }
+
+  const best = withMargin.reduce((a, b) => Number(b.net_margin) > Number(a.net_margin) ? b : a);
+  const worst = withMargin.reduce((a, b) => Number(b.net_margin) < Number(a.net_margin) ? b : a);
+
+  const card = (job, kind) => `
+    <a class="highlight-card highlight-card-${kind}" href="job.html?job=${encodeURIComponent(job.job_number)}">
+      <span class="highlight-kicker">${kind === 'best' ? 'Most profitable' : 'Biggest risk'}</span>
+      <span class="highlight-job">${job.job_number} — ${escapeHtml(job.title || '')}</span>
+      <span class="highlight-client">${escapeHtml(job.client_name || '')}</span>
+      <span class="highlight-margin ${Number(job.net_margin) < 0 ? 'negative' : ''}">${money(job.net_margin)} net profit (${pct(job.net_margin_pct)} margin)</span>
+    </a>
+  `;
+
+  el.innerHTML = (best === worst)
+    ? card(best, 'best')
+    : card(best, 'best') + card(worst, 'worst');
 }
 
 function renderProfitPanel(jobs) {
@@ -92,7 +120,7 @@ function renderProfitPanel(jobs) {
       <span class="profit-value">${money(totalQuoted)}</span>
     </div>
     <div class="profit-tile profit-tile-emphasis">
-      <span class="profit-label">Net margin</span>
+      <span class="profit-label">Net profit</span>
       <span class="profit-value ${totalNetMargin < 0 ? 'negative' : ''}">${money(totalNetMargin)}</span>
     </div>
     <div class="profit-tile">
@@ -166,6 +194,7 @@ function renderTable(jobs) {
       <td class="${j.net_margin_pct !== null && j.net_margin_pct < 0 ? 'negative' : ''}"><strong>${pct(j.net_margin_pct)}</strong></td>
       <td>${j.actual_hours ?? '—'} / ${j.estimate_hours ?? '—'}</td>
       <td>${pctChip(j.pct_actual_vs_estimate_hours, j.risk)}</td>
+      <td>${j.notes ? `<span class="job-note">${escapeHtml(j.notes)}</span>` : '—'}</td>
     </tr>
   `).join('');
 }

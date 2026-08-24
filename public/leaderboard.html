@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Health — Handler leaderboard</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <a href="index.html" class="back-link">&larr; All jobs</a>
+  <h1>Handler leaderboard</h1>
+  <p class="topbar-sub">Profit performance by handler, across their open live jobs</p>
+</header>
+
+<main class="main">
+  <table class="job-table" id="leaderboardTable">
+    <thead>
+      <tr>
+        <th>Handler</th>
+        <th>Jobs</th>
+        <th>Total quoted</th>
+        <th>Net profit</th>
+        <th>Blended net margin %</th>
+        <th>Red</th>
+        <th>Amber</th>
+      </tr>
+    </thead>
+    <tbody id="leaderboardBody"></tbody>
+  </table>
+</main>
+
+<script src="leaderboard.js"></script>
+</body>
+</html>

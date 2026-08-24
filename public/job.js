@@ -54,8 +54,52 @@ async function loadJob() {
   badge.className = 'risk-badge risk-badge-' + risk;
 
   renderStats(latest, risk);
-  renderChart(snapshots);
+  renderBurnBars(latest);
   document.getElementById('notesInput').value = job.notes || '';
+}
+
+function renderBurnBars(latest) {
+  const el = document.getElementById('burnBars');
+  if (!latest) {
+    el.innerHTML = '<p class="chart-note">No data yet.</p>';
+    return;
+  }
+
+  const rows = [
+    {
+      label: 'Hours',
+      estimate: Number(latest.estimate_hours ?? 0),
+      actual: Number(latest.actual_hours ?? 0),
+      fmt: v => v.toFixed(1) + 'h',
+    },
+    {
+      label: 'Cost',
+      estimate: Number(latest.estimate_cost ?? 0),
+      actual: Number(latest.actual_cost ?? 0),
+      fmt: v => moneyStr(v),
+    },
+  ];
+
+  el.innerHTML = rows.map(row => {
+    const scaleMax = Math.max(row.estimate, row.actual, 1) * 1.15;
+    const actualPct = Math.min(100, (row.actual / scaleMax) * 100);
+    const estimatePct = Math.min(100, (row.estimate / scaleMax) * 100);
+    const usedPct = row.estimate > 0 ? (row.actual / row.estimate) * 100 : 0;
+    const risk = computeRisk(usedPct, null);
+
+    return `
+      <div class="burn-row">
+        <div class="burn-row-header">
+          <span class="burn-label">${row.label}</span>
+          <span class="burn-values">${row.fmt(row.actual)} of ${row.fmt(row.estimate)} estimated &middot; ${usedPct.toFixed(0)}%</span>
+        </div>
+        <div class="burn-track">
+          <div class="burn-fill burn-fill-${risk}" style="width:${actualPct}%"></div>
+          <div class="burn-marker" style="left:${estimatePct}%"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 function initNotes() {
@@ -102,7 +146,7 @@ function renderStats(latest, risk) {
       <span class="profit-value">${moneyStr(latest.quoted_value)}</span>
     </div>
     <div class="profit-tile profit-tile-emphasis profit-tile-${risk}">
-      <span class="profit-label">Net margin</span>
+      <span class="profit-label">Net profit</span>
       <span class="profit-value ${latest.net_margin < 0 ? 'negative' : ''}">${moneyStr(latest.net_margin)}</span>
     </div>
     <div class="profit-tile">
@@ -122,86 +166,6 @@ function renderStats(latest, risk) {
       <span class="profit-value tile-${hoursRisk}">${pctStr(hoursPct)}</span>
     </div>
   `;
-}
-
-function renderChart(snapshots) {
-  const note = document.getElementById('chartNote');
-  const canvas = document.getElementById('trendChart');
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  const padL = 50, padR = 20, padT = 20, padB = 30;
-
-  ctx.clearRect(0, 0, W, H);
-
-  if (snapshots.length < 2) {
-    note.textContent = 'Trend builds up as daily syncs accumulate — only ' +
-      snapshots.length + ' day' + (snapshots.length === 1 ? '' : 's') + ' of history so far.';
-  } else {
-    note.textContent = '';
-  }
-
-  if (snapshots.length === 0) return;
-
-  const marginVals = snapshots.map(s => Number(s.net_margin_pct ?? 0));
-  const hoursVals = snapshots.map(s => Number(s.pct_actual_vs_estimate_hours ?? 0));
-  const allVals = [...marginVals, ...hoursVals, 0, 100];
-  const minY = Math.min(...allVals) - 10;
-  const maxY = Math.max(...allVals) + 10;
-
-  const plotW = W - padL - padR;
-  const plotH = H - padT - padB;
-
-  const xFor = i => snapshots.length === 1
-    ? padL + plotW / 2
-    : padL + (i / (snapshots.length - 1)) * plotW;
-  const yFor = v => padT + plotH - ((v - minY) / (maxY - minY)) * plotH;
-
-  // axes
-  ctx.strokeStyle = '#e4e1da';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(padL, padT);
-  ctx.lineTo(padL, padT + plotH);
-  ctx.lineTo(padL + plotW, padT + plotH);
-  ctx.stroke();
-
-  // zero-margin reference line
-  ctx.strokeStyle = '#e4e1da';
-  ctx.setLineDash([4, 4]);
-  ctx.beginPath();
-  ctx.moveTo(padL, yFor(0));
-  ctx.lineTo(padL + plotW, yFor(0));
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  function drawLine(vals, color) {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    vals.forEach((v, i) => {
-      const x = xFor(i), y = yFor(v);
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-
-    ctx.fillStyle = color;
-    vals.forEach((v, i) => {
-      ctx.beginPath();
-      ctx.arc(xFor(i), yFor(v), 3, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  }
-
-  drawLine(marginVals, '#2d5c4d');
-  drawLine(hoursVals, '#a3691a');
-
-  // x labels (first/last date)
-  ctx.fillStyle = '#6b7280';
-  ctx.font = '11px -apple-system, sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText(snapshots[0].snapshot_date, padL, H - 8);
-  ctx.textAlign = 'right';
-  ctx.fillText(snapshots.at(-1).snapshot_date, padL + plotW, H - 8);
 }
 
 initNotes();

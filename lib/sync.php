@@ -28,9 +28,14 @@ function run_job_sync(): array
     $pdo = db();
     $today = date('Y-m-d');
 
+    // Mark everyone inactive first; jobs actually present in this sync get
+    // reactivated below. Anything left inactive has dropped out of the
+    // "Open live jobs" view (completed, put on hold, etc).
+    $pdo->exec('UPDATE jobs SET is_active = 0');
+
     $upsertJob = $pdo->prepare(
-        'INSERT INTO jobs (job_number, job_uuid, title, client_name, handler_name, status, status_description, date_in, date_due, last_synced_at)
-         VALUES (:job_number, :job_uuid, :title, :client_name, :handler_name, :status, :status_description, :date_in, :date_due, NOW())
+        'INSERT INTO jobs (job_number, job_uuid, title, client_name, handler_name, status, status_description, date_in, date_due, is_active, last_synced_at)
+         VALUES (:job_number, :job_uuid, :title, :client_name, :handler_name, :status, :status_description, :date_in, :date_due, 1, NOW())
          ON DUPLICATE KEY UPDATE
            job_uuid = VALUES(job_uuid),
            title = VALUES(title),
@@ -40,6 +45,7 @@ function run_job_sync(): array
            status_description = VALUES(status_description),
            date_in = VALUES(date_in),
            date_due = VALUES(date_due),
+           is_active = 1,
            last_synced_at = NOW()'
     );
 
@@ -104,9 +110,15 @@ function run_job_sync(): array
         $actualHours = (float) ($fin['jobActualUnitsBase'] ?? 0);
         $estimateCost = (float) ($fin['jobEstimateTotal'] ?? 0);
         $actualCost = (float) ($fin['jobCostTotalPI'] ?? 0);
+        $actualPurchaseCost = (float) ($fin['jobPOCostPI'] ?? 0);
         $quoted = (float) ($fin['jobQuotedPrice'] ?? 0);
-        $grossMargin = (float) ($fin['jobGrossMargin'] ?? 0);
-        $netMargin = (float) ($fin['jobNetMargin'] ?? 0);
+
+        // Synergist's own jobGrossMargin/jobNetMargin are quoted-vs-ESTIMATE
+        // (fixed at quote time), not quoted-vs-actual — they barely move as
+        // the job progresses. We want real, current profitability, so these
+        // are computed against actual costs incurred so far instead.
+        $grossMargin = $quoted - $actualPurchaseCost;
+        $netMargin = $quoted - $actualCost;
 
         $upsertSnapshot->execute([
             'job_id' => $jobId,
