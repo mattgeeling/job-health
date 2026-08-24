@@ -49,7 +49,9 @@ if ($estHours > 0 && $actHours > $estHours && $quoted > 0) {
 }
 
 $prompt = <<<PROMPT
-You are a plain-speaking financial analyst helping a creative agency review the profitability of one job. Write a short (3-4 sentence) narrative summary of this job's numbers, in the style of a colleague giving a quick, honest verdict — not a report. Be direct about whether it was profitable, and whether it was efficiently delivered. If it went over on hours, note that going over hours doesn't automatically mean losing money, and explain the distinction between commercial profitability and delivery efficiency if relevant. Do not repeat every number back as a list — write it as prose. Do not use markdown formatting.
+You are a plain-speaking financial analyst helping a creative agency review the profitability of one job. Write a short (3-4 sentence) narrative summary of this job's numbers, in the style of a colleague giving a quick, honest verdict — not a report. Be direct about whether it was profitable, and whether it was efficiently delivered. If it went over on hours, note that going over hours doesn't automatically mean losing money, and explain the distinction between commercial profitability and delivery efficiency if relevant. Do not repeat every number back as a list — write it as prose.
+
+Wrap the key figures (money amounts, percentages, and hour counts) in double asterisks for bold, e.g. **£11,117** or **46% margin** or **362 hours** — but use no other markdown formatting of any kind.
 
 If an "Equivalent quote at actual hours" figure is given below, you may reference it as illustrating the value of the extra effort delivered — but never describe it as what the job "should have" been charged, a missed charge, or a shortfall, since the job was already profitable at the original quote.
 

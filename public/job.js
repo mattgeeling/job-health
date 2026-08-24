@@ -22,7 +22,22 @@ function computeRisk(hoursPct, netMarginPct) {
   return 'green';
 }
 
-const riskLabel = { red: 'Over budget', amber: 'Approaching risk', green: 'Healthy', unquoted: 'No quote entered' };
+function riskLabelFor(risk, hoursPct, netMarginPct) {
+  if (risk === 'green') return 'Healthy';
+  if (risk === 'unquoted') return 'No quote entered';
+
+  if (risk === 'amber') return 'Approaching risk';
+
+  // red
+  const h = hoursPct === null || hoursPct === undefined ? null : Number(hoursPct);
+  const m = netMarginPct === null || netMarginPct === undefined ? null : Number(netMarginPct);
+  const overHours = h !== null && h >= 100;
+  const lossMaking = m !== null && m < 0;
+
+  if (lossMaking && overHours) return 'Over hours & loss-making';
+  if (lossMaking) return 'Loss-making';
+  return 'Over on hours';
+}
 
 let currentJobNumber = null;
 
@@ -52,7 +67,7 @@ async function loadJob() {
     : Number(latest.quoted_value) <= 0 ? 'unquoted'
     : computeRisk(latest.pct_actual_vs_estimate_hours, latest.net_margin_pct);
   const badge = document.getElementById('riskBadge');
-  badge.textContent = riskLabel[risk];
+  badge.textContent = latest ? riskLabelFor(risk, latest.pct_actual_vs_estimate_hours, latest.net_margin_pct) : 'Healthy';
   badge.className = 'risk-badge risk-badge-' + risk;
 
   renderStats(latest, risk);
@@ -201,12 +216,16 @@ function renderRecommendedCharge(latest) {
   document.querySelector('.notes-panel').appendChild(box);
 }
 
+function boldMarkdownToHtml(escapedText) {
+  return escapedText.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+
 function renderNarrativeText(el, narrative) {
   const sentences = narrative.match(/[^.!?]+[.!?]+(\s+|$)/g) || [narrative];
   const firstChunk = sentences.slice(0, 3).join('').trim();
   const restChunk = sentences.slice(3).join('').trim();
   const paragraphs = [firstChunk, restChunk].filter(Boolean);
-  el.innerHTML = paragraphs.map(p => `<p>${escapeHtml(p)}</p>`).join('');
+  el.innerHTML = paragraphs.map(p => `<p>${boldMarkdownToHtml(escapeHtml(p))}</p>`).join('');
 }
 
 function initNarrative(jobNumber) {
