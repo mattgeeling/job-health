@@ -16,4 +16,8 @@ return [
         'open_live_jobs_view' => 134,
         'sync_secret' => 'REPLACE_ME',
     ],
+    'gemini' => [
+        'api_key' => 'REPLACE_ME',
+        'model' => 'gemini-3.5-flash-lite',
+    ],
 ];

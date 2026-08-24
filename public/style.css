@@ -11,6 +11,8 @@
   --amber-bg: #fdf1de;
   --green: #2f7a4f;
   --green-bg: #e7f3ea;
+  --grey: #8b8578;
+  --grey-bg: #ece9e2;
 }
 
 * { box-sizing: border-box; }
@@ -224,6 +226,11 @@ body {
   color: var(--green);
 }
 
+.risk-badge-unquoted {
+  background: var(--grey-bg);
+  color: var(--grey);
+}
+
 .highlight-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -369,6 +376,76 @@ body {
   border-radius: 10px;
   padding: 20px;
   margin-top: 16px;
+}
+
+.recommended-charge {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--red-bg);
+  border: 1px solid var(--red);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-top: 12px;
+}
+
+.recommended-charge-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--red);
+}
+
+.recommended-charge-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.recommended-charge-note {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.recommended-charge-note p {
+  margin: 0 0 10px;
+}
+
+.recommended-charge-note p:last-child {
+  margin-bottom: 0;
+}
+
+.narrative-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.narrative-header h2 {
+  margin: 0;
+}
+
+.narrative-text {
+  margin: 12px 0 0;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+.narrative-text p {
+  margin: 0 0 12px;
+}
+
+.narrative-text p:last-child {
+  margin-bottom: 0;
+}
+
+.narrative-text:empty {
+  display: none;
 }
 
 .chart-section h2 {
@@ -533,6 +610,7 @@ body {
 .risk-dot.red { background: var(--red); }
 .risk-dot.amber { background: var(--amber); }
 .risk-dot.green { background: var(--green); }
+.risk-dot.unquoted { background: var(--grey); }
 
 .pct-chip {
   display: inline-block;
@@ -544,6 +622,7 @@ body {
 .pct-chip.red { background: var(--red-bg); color: var(--red); }
 .pct-chip.amber { background: var(--amber-bg); color: var(--amber); }
 .pct-chip.green { background: var(--green-bg); color: var(--green); }
+.pct-chip.unquoted { background: var(--grey-bg); color: var(--grey); }
 
 .job-title {
   display: block;

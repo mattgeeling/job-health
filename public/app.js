@@ -81,7 +81,7 @@ function applyFilter() {
 
 function renderHighlights(jobs) {
   const el = document.getElementById('highlightRow');
-  const withMargin = jobs.filter(j => j.net_margin !== null && j.net_margin !== undefined);
+  const withMargin = jobs.filter(j => j.net_margin !== null && j.net_margin !== undefined && j.risk !== 'unquoted');
   if (withMargin.length === 0) {
     el.innerHTML = '';
     return;
@@ -106,9 +106,10 @@ function renderHighlights(jobs) {
 }
 
 function renderProfitPanel(jobs) {
-  const totalQuoted = jobs.reduce((sum, j) => sum + Number(j.quoted_value || 0), 0);
-  const totalNetMargin = jobs.reduce((sum, j) => sum + Number(j.net_margin || 0), 0);
-  const totalGrossMargin = jobs.reduce((sum, j) => sum + Number(j.gross_margin || 0), 0);
+  const quotedJobs = jobs.filter(j => j.risk !== 'unquoted');
+  const totalQuoted = quotedJobs.reduce((sum, j) => sum + Number(j.quoted_value || 0), 0);
+  const totalNetMargin = quotedJobs.reduce((sum, j) => sum + Number(j.net_margin || 0), 0);
+  const totalGrossMargin = quotedJobs.reduce((sum, j) => sum + Number(j.gross_margin || 0), 0);
   const blendedNetPct = totalQuoted !== 0 ? (totalNetMargin / totalQuoted) * 100 : null;
   const atRiskMargin = jobs
     .filter(j => j.risk === 'red')
@@ -144,7 +145,7 @@ function riskWeight(risk) {
 }
 
 function renderSummary(jobs) {
-  const counts = { red: 0, amber: 0, green: 0 };
+  const counts = { red: 0, amber: 0, green: 0, unquoted: 0 };
   for (const j of jobs) counts[j.risk] = (counts[j.risk] || 0) + 1;
   const el = document.getElementById('summary');
   el.innerHTML = `
@@ -152,6 +153,7 @@ function renderSummary(jobs) {
     <span><span class="risk-dot red"></span> <strong>${counts.red}</strong> over budget / negative margin</span>
     <span><span class="risk-dot amber"></span> <strong>${counts.amber}</strong> approaching risk</span>
     <span><span class="risk-dot green"></span> <strong>${counts.green}</strong> healthy</span>
+    ${counts.unquoted > 0 ? `<span><span class="risk-dot unquoted"></span> <strong>${counts.unquoted}</strong> no quote yet</span>` : ''}
   `;
 }
 

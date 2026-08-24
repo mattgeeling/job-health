@@ -27,11 +27,16 @@ foreach ($rows as &$row) {
     $hoursPct = $row['pct_actual_vs_estimate_hours'] !== null ? (float) $row['pct_actual_vs_estimate_hours'] : null;
     $netMarginPct = $row['net_margin_pct'] !== null ? (float) $row['net_margin_pct'] : null;
 
-    $risk = 'green';
-    if (($hoursPct !== null && $hoursPct >= 100) || ($netMarginPct !== null && $netMarginPct < 0)) {
+    if ((float) $row['quoted_value'] <= 0) {
+        // No quote entered yet — any cost against a £0 quote is
+        // mathematically negative, which isn't a real loss signal.
+        $risk = 'unquoted';
+    } elseif (($hoursPct !== null && $hoursPct >= 100) || ($netMarginPct !== null && $netMarginPct < 0)) {
         $risk = 'red';
     } elseif (($hoursPct !== null && $hoursPct >= 90) || ($netMarginPct !== null && $netMarginPct < 15)) {
         $risk = 'amber';
+    } else {
+        $risk = 'green';
     }
     $row['risk'] = $risk;
 }

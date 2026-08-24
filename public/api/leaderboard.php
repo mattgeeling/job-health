@@ -23,6 +23,7 @@ $rows = $pdo->query(
         GROUP BY job_id
      ) latest ON latest.job_id = s.job_id AND latest.snapshot_date = s.snapshot_date
      WHERE j.is_active = 1 AND j.handler_name IS NOT NULL AND j.handler_name != \'\'
+        AND s.quoted_value > 0
      GROUP BY j.handler_name
      ORDER BY total_net_margin DESC'
 )->fetchAll();

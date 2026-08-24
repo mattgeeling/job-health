@@ -22,7 +22,7 @@ function computeRisk(hoursPct, netMarginPct) {
   return 'green';
 }
 
-const riskLabel = { red: 'Over budget', amber: 'Approaching risk', green: 'Healthy' };
+const riskLabel = { red: 'Over budget', amber: 'Approaching risk', green: 'Healthy', unquoted: 'No quote entered' };
 
 let currentJobNumber = null;
 
@@ -48,17 +48,21 @@ async function loadJob() {
       .filter(Boolean).join(' · ');
 
   const latest = snapshots.at(-1);
-  const risk = latest ? computeRisk(latest.pct_actual_vs_estimate_hours, latest.net_margin_pct) : 'green';
+  const risk = !latest ? 'green'
+    : Number(latest.quoted_value) <= 0 ? 'unquoted'
+    : computeRisk(latest.pct_actual_vs_estimate_hours, latest.net_margin_pct);
   const badge = document.getElementById('riskBadge');
   badge.textContent = riskLabel[risk];
   badge.className = 'risk-badge risk-badge-' + risk;
 
   renderStats(latest, risk);
   renderBurnBars(latest);
+  renderRecommendedCharge(latest);
   document.getElementById('notesInput').value = job.notes || '';
 
   loadPhases(jobNumber);
   loadCostTransactions(jobNumber);
+  initNarrative(jobNumber);
 }
 
 async function loadPhases(jobNumber) {
@@ -165,6 +169,72 @@ function renderBurnBars(latest) {
   }).join('');
 }
 
+function renderRecommendedCharge(latest) {
+  const existing = document.getElementById('recommendedChargeBox');
+  if (existing) existing.remove();
+
+  if (!latest) return;
+  const estHours = Number(latest.estimate_hours ?? 0);
+  const actHours = Number(latest.actual_hours ?? 0);
+  const quoted = Number(latest.quoted_value ?? 0);
+
+  if (estHours <= 0 || actHours <= estHours || quoted <= 0) {
+    return;
+  }
+
+  const impliedQuote = quoted * (actHours / estHours);
+  const additionalValue = impliedQuote - quoted;
+
+  const box = document.createElement('div');
+  box.id = 'recommendedChargeBox';
+  box.className = 'recommended-charge';
+  box.innerHTML = `
+    <span class="recommended-charge-label">Equivalent quote at actual hours</span>
+    <span class="recommended-charge-value">${moneyStr(impliedQuote)}</span>
+    <div class="recommended-charge-note">
+      <p>Based on the actual hours delivered, this job would have had an equivalent quote of ${moneyStr(impliedQuote)}
+      at the original effective hourly rate (${moneyStr(quoted)} scaled by ${actHours.toFixed(1)}h actual vs ${estHours.toFixed(1)}h estimated).</p>
+      <p>This represents ${moneyStr(additionalValue)} of additional delivery value beyond the original quote — it does not mean the job lost money
+      or that this amount was required to be profitable; it simply values the extra hours delivered against the original estimate.</p>
+    </div>
+  `;
+  document.querySelector('.notes-panel').appendChild(box);
+}
+
+function renderNarrativeText(el, narrative) {
+  const sentences = narrative.match(/[^.!?]+[.!?]+(\s+|$)/g) || [narrative];
+  const firstChunk = sentences.slice(0, 3).join('').trim();
+  const restChunk = sentences.slice(3).join('').trim();
+  const paragraphs = [firstChunk, restChunk].filter(Boolean);
+  el.innerHTML = paragraphs.map(p => `<p>${escapeHtml(p)}</p>`).join('');
+}
+
+function initNarrative(jobNumber) {
+  const btn = document.getElementById('narrativeBtn');
+  const text = document.getElementById('narrativeText');
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.textContent = 'Generating…';
+    text.innerHTML = '';
+    try {
+      const res = await fetch('api/job_narrative.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_number: jobNumber }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.ok) throw new Error(result.error || 'Failed');
+      renderNarrativeText(text, result.narrative);
+    } catch (e) {
+      text.textContent = 'Failed to generate summary — try again.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Generate summary';
+    }
+  });
+}
+
 function initNotes() {
   const textarea = document.getElementById('notesInput');
   const btn = document.getElementById('notesSaveBtn');
@@ -202,13 +272,14 @@ function renderStats(latest, risk) {
   const hoursPct = latest.pct_actual_vs_estimate_hours;
   const hoursRisk = computeRisk(hoursPct, null);
   const marginRisk = computeRisk(null, latest.net_margin_pct);
+  const profitRisk = Number(latest.net_margin) > 0 ? 'green' : 'red';
 
   el.innerHTML = `
     <div class="profit-tile">
       <span class="profit-label">Quoted</span>
       <span class="profit-value">${moneyStr(latest.quoted_value)}</span>
     </div>
-    <div class="profit-tile profit-tile-emphasis profit-tile-${risk}">
+    <div class="profit-tile profit-tile-emphasis profit-tile-${profitRisk}">
       <span class="profit-label">Net profit</span>
       <span class="profit-value ${latest.net_margin < 0 ? 'negative' : ''}">${moneyStr(latest.net_margin)}</span>
     </div>
