@@ -32,6 +32,10 @@ jobs:
                   'open_live_jobs_view' => 134,
                   'sync_secret' => '${{ secrets.SYNC_SECRET }}',
               ],
+              'gemini' => [
+                  'api_key' => '${{ secrets.GEMINI_API_KEY }}',
+                  'model' => 'gemini-3.5-flash-lite',
+              ],
           ];
           PHP
 
