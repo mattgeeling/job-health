@@ -56,6 +56,63 @@ async function loadJob() {
   renderStats(latest, risk);
   renderBurnBars(latest);
   document.getElementById('notesInput').value = job.notes || '';
+
+  loadPhases(jobNumber);
+  loadCostTransactions(jobNumber);
+}
+
+async function loadPhases(jobNumber) {
+  const body = document.getElementById('phaseTableBody');
+  const note = document.getElementById('phaseNote');
+  try {
+    const res = await fetch('api/job_phases.php?job=' + encodeURIComponent(jobNumber));
+    const { phases } = await res.json();
+
+    if (!phases || phases.length === 0) {
+      note.textContent = 'No stage data available for this job.';
+      return;
+    }
+
+    body.innerHTML = phases.map(p => {
+      const usedPct = p.estimate_hours > 0 ? (p.actual_hours / p.estimate_hours) * 100 : 0;
+      const risk = p.estimate_hours > 0 ? computeRisk(usedPct, null) : 'green';
+      return `
+        <tr>
+          <td><span class="risk-dot ${risk}"></span></td>
+          <td>${escapeHtml(p.description || p.phase_number)}</td>
+          <td>${p.estimate_hours.toFixed(1)}</td>
+          <td>${p.actual_hours.toFixed(1)}</td>
+          <td>${p.estimate_hours > 0 ? `<span class="pct-chip ${risk}">${usedPct.toFixed(0)}%</span>` : '—'}</td>
+        </tr>
+      `;
+    }).join('');
+  } catch (e) {
+    note.textContent = 'Failed to load stage breakdown.';
+  }
+}
+
+async function loadCostTransactions(jobNumber) {
+  const body = document.getElementById('costTableBody');
+  try {
+    const res = await fetch('api/job_costs.php?job=' + encodeURIComponent(jobNumber));
+    const { transactions } = await res.json();
+
+    if (!transactions || transactions.length === 0) {
+      body.innerHTML = '<tr><td colspan="4" class="chart-note">No expense/purchase line items logged.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = transactions.map(t => `
+      <tr>
+        <td>${t.date || '—'}</td>
+        <td>${escapeHtml(t.description || '')}</td>
+        <td>${escapeHtml(t.resource_name || '')}</td>
+        <td>${moneyStr(t.amount)}</td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    body.innerHTML = '<tr><td colspan="4" class="chart-note">Failed to load cost line items.</td></tr>';
+  }
 }
 
 function renderBurnBars(latest) {

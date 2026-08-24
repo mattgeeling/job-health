@@ -292,14 +292,20 @@ body {
 
 .summary {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   margin-bottom: 20px;
-  font-size: 13px;
+  font-size: 17px;
   color: var(--ink-soft);
 }
 
 .summary strong {
   color: var(--ink);
+  font-size: 19px;
+}
+
+.summary .risk-dot {
+  width: 12px;
+  height: 12px;
 }
 
 .job-table {
