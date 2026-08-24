@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS jobs (
   status_description VARCHAR(50) NULL,
   date_in           DATE NULL,
   date_due          DATE NULL,
+  notes             TEXT NULL,
   last_synced_at    TIMESTAMP NULL,
   created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Health — Job detail</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <a href="index.html" class="back-link">&larr; All jobs</a>
+  <h1 id="jobTitle">Loading…</h1>
+  <p class="topbar-sub" id="jobSub"></p>
+</header>
+
+<main class="main job-detail-layout">
+  <div class="job-detail-primary">
+    <div class="profit-panel" id="statPanel"></div>
+
+    <section class="chart-section">
+      <h2>Trend</h2>
+      <div class="chart-legend">
+        <span><span class="legend-dot legend-margin"></span> Net margin %</span>
+        <span><span class="legend-dot legend-hours"></span> Hours used %</span>
+      </div>
+      <canvas id="trendChart" width="800" height="280"></canvas>
+      <p class="chart-note" id="chartNote"></p>
+    </section>
+  </div>
+
+  <aside class="notes-panel">
+    <h2>Notes</h2>
+    <textarea id="notesInput" placeholder="Context on this job's margin, blockers, next steps…"></textarea>
+    <div class="notes-footer">
+      <button id="notesSaveBtn" type="button">Save</button>
+      <span class="notes-status" id="notesStatus"></span>
+    </div>
+  </aside>
+</main>
+
+<script src="job.js"></script>
+</body>
+</html>

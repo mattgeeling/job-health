@@ -40,6 +40,19 @@ body {
   font-size: 14px;
 }
 
+.back-link {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
 .main {
   max-width: 1200px;
   margin: 0 auto;
@@ -69,6 +82,35 @@ body {
   color: var(--ink);
   font-size: 13px;
   min-width: 200px;
+}
+
+.sync-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sync-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.sync-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sync-status {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.sync-status.sync-status-error {
+  color: var(--red);
 }
 
 .profit-panel {
@@ -168,6 +210,130 @@ body {
 
 .job-table tbody tr:hover {
   background: #fbfaf7;
+}
+
+.job-row {
+  cursor: pointer;
+}
+
+.job-detail-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.job-detail-primary {
+  min-width: 0;
+}
+
+.chart-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 16px;
+}
+
+.chart-section h2 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 12px;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+.legend-margin { background: var(--accent); }
+.legend-hours { background: var(--amber); }
+
+#trendChart {
+  width: 100%;
+  height: auto;
+}
+
+.chart-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.notes-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 24px;
+}
+
+.notes-panel h2 {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.notes-panel textarea {
+  width: 100%;
+  min-height: 260px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+.notes-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.notes-footer button {
+  padding: 6px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.notes-footer button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.notes-status {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 900px) {
+  .job-detail-layout {
+    grid-template-columns: 1fr;
+  }
+  .notes-panel {
+    position: static;
+  }
 }
 
 .risk-dot {

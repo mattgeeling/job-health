@@ -8,6 +8,34 @@ async function loadJobs() {
   applyFilter();
 }
 
+function initSyncButton() {
+  const btn = document.getElementById('syncBtn');
+  const status = document.getElementById('syncStatus');
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.textContent = 'Syncing…';
+    status.textContent = '';
+    status.classList.remove('sync-status-error');
+
+    try {
+      const res = await fetch('api/refresh.php', { method: 'POST' });
+      const result = await res.json();
+      if (!res.ok || !result.ok) throw new Error(result.error || 'Sync failed');
+
+      await loadJobs();
+      const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      status.textContent = `Synced ${result.synced} jobs at ${now}`;
+    } catch (e) {
+      status.textContent = 'Sync failed — try again';
+      status.classList.add('sync-status-error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Sync now';
+    }
+  });
+}
+
 function populateHandlerFilter(jobs) {
   const select = document.getElementById('handlerFilter');
   const handlers = [...new Set(jobs.map(j => j.handler_name).filter(Boolean))].sort();
@@ -111,7 +139,7 @@ function renderTable(jobs) {
 
   const body = document.getElementById('jobTableBody');
   body.innerHTML = sorted.map(j => `
-    <tr>
+    <tr class="job-row" onclick="location.href='job.html?job=${encodeURIComponent(j.job_number)}'">
       <td><span class="risk-dot ${j.risk}"></span></td>
       <td>
         <span class="job-number">${j.job_number}</span>
@@ -135,4 +163,5 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+initSyncButton();
 loadJobs();
