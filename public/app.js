@@ -1,8 +1,72 @@
+let allJobs = [];
+
 async function loadJobs() {
   const res = await fetch('api/jobs.php');
   const { jobs } = await res.json();
-  renderSummary(jobs);
-  renderTable(jobs);
+  allJobs = jobs;
+  populateHandlerFilter(jobs);
+  applyFilter();
+}
+
+function populateHandlerFilter(jobs) {
+  const select = document.getElementById('handlerFilter');
+  const handlers = [...new Set(jobs.map(j => j.handler_name).filter(Boolean))].sort();
+
+  const saved = localStorage.getItem('jobHealthHandlerFilter') || '';
+
+  select.innerHTML = '<option value="">All handlers</option>' +
+    handlers.map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('');
+
+  if (handlers.includes(saved)) {
+    select.value = saved;
+  }
+
+  select.addEventListener('change', () => {
+    localStorage.setItem('jobHealthHandlerFilter', select.value);
+    applyFilter();
+  });
+}
+
+function applyFilter() {
+  const handler = document.getElementById('handlerFilter').value;
+  const filtered = handler ? allJobs.filter(j => j.handler_name === handler) : allJobs;
+  renderProfitPanel(filtered);
+  renderSummary(filtered);
+  renderTable(filtered);
+}
+
+function renderProfitPanel(jobs) {
+  const totalQuoted = jobs.reduce((sum, j) => sum + Number(j.quoted_value || 0), 0);
+  const totalNetMargin = jobs.reduce((sum, j) => sum + Number(j.net_margin || 0), 0);
+  const totalGrossMargin = jobs.reduce((sum, j) => sum + Number(j.gross_margin || 0), 0);
+  const blendedNetPct = totalQuoted !== 0 ? (totalNetMargin / totalQuoted) * 100 : null;
+  const atRiskMargin = jobs
+    .filter(j => j.risk === 'red')
+    .reduce((sum, j) => sum + Math.min(0, Number(j.net_margin || 0)), 0);
+
+  const el = document.getElementById('profitPanel');
+  el.innerHTML = `
+    <div class="profit-tile">
+      <span class="profit-label">Total quoted</span>
+      <span class="profit-value">${money(totalQuoted)}</span>
+    </div>
+    <div class="profit-tile profit-tile-emphasis">
+      <span class="profit-label">Net margin</span>
+      <span class="profit-value ${totalNetMargin < 0 ? 'negative' : ''}">${money(totalNetMargin)}</span>
+    </div>
+    <div class="profit-tile">
+      <span class="profit-label">Blended net margin %</span>
+      <span class="profit-value ${blendedNetPct !== null && blendedNetPct < 0 ? 'negative' : ''}">${pct(blendedNetPct)}</span>
+    </div>
+    <div class="profit-tile">
+      <span class="profit-label">Gross margin</span>
+      <span class="profit-value">${money(totalGrossMargin)}</span>
+    </div>
+    <div class="profit-tile">
+      <span class="profit-label">Margin eroded by red jobs</span>
+      <span class="profit-value ${atRiskMargin < 0 ? 'negative' : ''}">${money(atRiskMargin)}</span>
+    </div>
+  `;
 }
 
 function riskWeight(risk) {
@@ -40,7 +104,9 @@ function renderTable(jobs) {
   const sorted = [...jobs].sort((a, b) => {
     const w = riskWeight(a.risk) - riskWeight(b.risk);
     if (w !== 0) return w;
-    return (b.pct_actual_vs_estimate_hours ?? 0) - (a.pct_actual_vs_estimate_hours ?? 0);
+    const aPct = a.net_margin_pct ?? Infinity;
+    const bPct = b.net_margin_pct ?? Infinity;
+    return aPct - bPct;
   });
 
   const body = document.getElementById('jobTableBody');
@@ -55,10 +121,10 @@ function renderTable(jobs) {
       <td>${escapeHtml(j.handler_name || '')}</td>
       <td>${j.date_due || '—'}</td>
       <td>${money(j.quoted_value)}</td>
+      <td class="${j.net_margin < 0 ? 'negative' : ''}"><strong>${money(j.net_margin)}</strong></td>
+      <td class="${j.net_margin_pct !== null && j.net_margin_pct < 0 ? 'negative' : ''}"><strong>${pct(j.net_margin_pct)}</strong></td>
       <td>${j.actual_hours ?? '—'} / ${j.estimate_hours ?? '—'}</td>
       <td>${pctChip(j.pct_actual_vs_estimate_hours, j.risk)}</td>
-      <td class="${j.net_margin < 0 ? 'negative' : ''}">${money(j.net_margin)}</td>
-      <td>${pct(j.net_margin_pct)}</td>
     </tr>
   `).join('');
 }

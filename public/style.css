@@ -46,6 +46,81 @@ body {
   padding: 24px 32px 48px;
 }
 
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.controls label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.controls select {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  min-width: 200px;
+}
+
+.profit-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.profit-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  background: var(--surface);
+}
+
+.profit-tile-emphasis {
+  background: var(--accent);
+}
+
+.profit-tile-emphasis .profit-label,
+.profit-tile-emphasis .profit-value {
+  color: #fff;
+}
+
+.profit-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+
+.profit-value {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.profit-value.negative {
+  color: var(--red);
+}
+
+.profit-tile-emphasis .profit-value.negative {
+  color: #ffd9d4;
+}
+
 .summary {
   display: flex;
   gap: 12px;

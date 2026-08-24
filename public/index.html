@@ -13,6 +13,15 @@
 </header>
 
 <main class="main">
+  <div class="controls">
+    <label for="handlerFilter">Handler</label>
+    <select id="handlerFilter">
+      <option value="">All handlers</option>
+    </select>
+  </div>
+
+  <div class="profit-panel" id="profitPanel"></div>
+
   <div class="summary" id="summary"></div>
 
   <table class="job-table" id="jobTable">
@@ -24,10 +33,10 @@
         <th>Handler</th>
         <th>Due</th>
         <th>Quoted</th>
-        <th>Hours (act/est)</th>
-        <th>Hours %</th>
         <th>Net margin</th>
         <th>Net margin %</th>
+        <th>Hours (act/est)</th>
+        <th>Hours %</th>
       </tr>
     </thead>
     <tbody id="jobTableBody"></tbody>
