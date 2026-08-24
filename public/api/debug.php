@@ -12,6 +12,11 @@ if (!isset($_GET['key']) || !hash_equals($cfg['sync_secret'], (string) $_GET['ke
     exit;
 }
 
+$dbCfg = (require __DIR__ . '/../../config/config.php')['db'];
+echo "Configured DB_USER: {$dbCfg['user']}\n";
+echo "Configured DB_HOST: {$dbCfg['host']}\n";
+echo "Configured DB_NAME: {$dbCfg['name']}\n";
+
 try {
     $pdo = db();
     echo "DB connection OK\n";
