@@ -52,11 +52,13 @@ function run_job_sync(): array
     $upsertSnapshot = $pdo->prepare(
         'INSERT INTO job_snapshots (
             job_id, snapshot_date, quoted_value, estimate_hours, actual_hours,
-            estimate_cost, actual_cost, gross_margin, net_margin,
+            estimate_cost, actual_cost, estimate_purchase_cost, actual_purchase_cost,
+            gross_margin, net_margin,
             gross_margin_pct, net_margin_pct, pct_actual_vs_estimate_hours, pct_actual_vs_estimate_cost
          ) VALUES (
             :job_id, :snapshot_date, :quoted_value, :estimate_hours, :actual_hours,
-            :estimate_cost, :actual_cost, :gross_margin, :net_margin,
+            :estimate_cost, :actual_cost, :estimate_purchase_cost, :actual_purchase_cost,
+            :gross_margin, :net_margin,
             :gross_margin_pct, :net_margin_pct, :pct_actual_vs_estimate_hours, :pct_actual_vs_estimate_cost
          )
          ON DUPLICATE KEY UPDATE
@@ -65,6 +67,8 @@ function run_job_sync(): array
             actual_hours = VALUES(actual_hours),
             estimate_cost = VALUES(estimate_cost),
             actual_cost = VALUES(actual_cost),
+            estimate_purchase_cost = VALUES(estimate_purchase_cost),
+            actual_purchase_cost = VALUES(actual_purchase_cost),
             gross_margin = VALUES(gross_margin),
             net_margin = VALUES(net_margin),
             gross_margin_pct = VALUES(gross_margin_pct),
@@ -111,6 +115,7 @@ function run_job_sync(): array
         $estimateCost = (float) ($fin['jobEstimateTotal'] ?? 0);
         $actualCost = (float) ($fin['jobCostTotalPI'] ?? 0);
         $actualPurchaseCost = (float) ($fin['jobPOCostPI'] ?? 0);
+        $estimatePurchaseCost = (float) ($fin['jobPOEstimateTotal'] ?? 0);
         $quoted = (float) ($fin['jobQuotedPrice'] ?? 0);
 
         // Synergist's own jobGrossMargin/jobNetMargin are quoted-vs-ESTIMATE
@@ -128,6 +133,8 @@ function run_job_sync(): array
             'actual_hours' => $actualHours,
             'estimate_cost' => $estimateCost,
             'actual_cost' => $actualCost,
+            'estimate_purchase_cost' => $estimatePurchaseCost,
+            'actual_purchase_cost' => $actualPurchaseCost,
             'gross_margin' => $grossMargin,
             'net_margin' => $netMargin,
             'gross_margin_pct' => pct($grossMargin, $quoted),

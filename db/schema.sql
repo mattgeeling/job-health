@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS job_snapshots (
   actual_hours                DECIMAL(10,2) NULL,
   estimate_cost               DECIMAL(12,2) NULL,
   actual_cost                 DECIMAL(12,2) NULL,
+  estimate_purchase_cost      DECIMAL(12,2) NULL,
+  actual_purchase_cost        DECIMAL(12,2) NULL,
   gross_margin                DECIMAL(12,2) NULL,
   net_margin                  DECIMAL(12,2) NULL,
   gross_margin_pct            DECIMAL(6,2) NULL,

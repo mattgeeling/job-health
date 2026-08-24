@@ -73,9 +73,15 @@ function renderBurnBars(latest) {
       fmt: v => v.toFixed(1) + 'h',
     },
     {
-      label: 'Cost',
+      label: 'Total cost',
       estimate: Number(latest.estimate_cost ?? 0),
       actual: Number(latest.actual_cost ?? 0),
+      fmt: v => moneyStr(v),
+    },
+    {
+      label: 'External costs',
+      estimate: Number(latest.estimate_purchase_cost ?? 0),
+      actual: Number(latest.actual_purchase_cost ?? 0),
       fmt: v => moneyStr(v),
     },
   ];

@@ -24,7 +24,8 @@ if (!$job) {
 
 $stmt = $pdo->prepare(
     'SELECT snapshot_date, quoted_value, estimate_hours, actual_hours,
-            estimate_cost, actual_cost, gross_margin, net_margin,
+            estimate_cost, actual_cost, estimate_purchase_cost, actual_purchase_cost,
+            gross_margin, net_margin,
             gross_margin_pct, net_margin_pct,
             pct_actual_vs_estimate_hours, pct_actual_vs_estimate_cost
      FROM job_snapshots

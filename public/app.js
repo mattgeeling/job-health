@@ -96,6 +96,7 @@ function renderHighlights(jobs) {
       <span class="highlight-job">${job.job_number} — ${escapeHtml(job.title || '')}</span>
       <span class="highlight-client">${escapeHtml(job.client_name || '')}</span>
       <span class="highlight-margin ${Number(job.net_margin) < 0 ? 'negative' : ''}">${money(job.net_margin)} net profit (${pct(job.net_margin_pct)} margin)</span>
+      <span class="highlight-handler">${escapeHtml(job.handler_name || 'Unassigned')}</span>
     </a>
   `;
 

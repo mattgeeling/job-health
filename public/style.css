@@ -284,6 +284,12 @@ body {
   color: var(--red);
 }
 
+.highlight-handler {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
 .summary {
   display: flex;
   gap: 12px;
@@ -546,7 +552,7 @@ body {
   background: var(--amber-bg);
   font-size: 11px;
   white-space: normal;
-  max-width: 280px;
+  max-width: 840px;
   margin-top: 4px;
   padding: 3px 6px;
   border-radius: 4px;
