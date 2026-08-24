@@ -2,10 +2,23 @@ let allJobs = [];
 
 async function loadJobs() {
   const res = await fetch('api/jobs.php');
-  const { jobs } = await res.json();
+  const { jobs, last_synced_at } = await res.json();
   allJobs = jobs;
   populateHandlerFilter(jobs);
   applyFilter();
+  renderLastSynced(last_synced_at);
+}
+
+function renderLastSynced(isoString) {
+  const el = document.getElementById('lastSynced');
+  if (!isoString) {
+    el.textContent = 'Never synced';
+    return;
+  }
+  const date = new Date(isoString.replace(' ', 'T'));
+  el.textContent = 'Last synced ' + date.toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
 }
 
 function initSyncButton() {

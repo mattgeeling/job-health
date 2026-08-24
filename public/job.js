@@ -14,6 +14,16 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function computeRisk(hoursPct, netMarginPct) {
+  const h = hoursPct === null || hoursPct === undefined ? null : Number(hoursPct);
+  const m = netMarginPct === null || netMarginPct === undefined ? null : Number(netMarginPct);
+  if ((h !== null && h >= 100) || (m !== null && m < 0)) return 'red';
+  if ((h !== null && h >= 90) || (m !== null && m < 15)) return 'amber';
+  return 'green';
+}
+
+const riskLabel = { red: 'Over budget', amber: 'Approaching risk', green: 'Healthy' };
+
 let currentJobNumber = null;
 
 async function loadJob() {
@@ -37,7 +47,13 @@ async function loadJob() {
     [job.client_name, job.handler_name, job.date_due ? `Due ${job.date_due}` : null]
       .filter(Boolean).join(' · ');
 
-  renderStats(snapshots.at(-1));
+  const latest = snapshots.at(-1);
+  const risk = latest ? computeRisk(latest.pct_actual_vs_estimate_hours, latest.net_margin_pct) : 'green';
+  const badge = document.getElementById('riskBadge');
+  badge.textContent = riskLabel[risk];
+  badge.className = 'risk-badge risk-badge-' + risk;
+
+  renderStats(latest, risk);
   renderChart(snapshots);
   document.getElementById('notesInput').value = job.notes || '';
 }
@@ -69,24 +85,29 @@ function initNotes() {
   });
 }
 
-function renderStats(latest) {
+function renderStats(latest, risk) {
   const el = document.getElementById('statPanel');
   if (!latest) {
     el.innerHTML = '<div class="profit-tile"><span class="profit-label">No data yet</span></div>';
     return;
   }
+
+  const hoursPct = latest.pct_actual_vs_estimate_hours;
+  const hoursRisk = computeRisk(hoursPct, null);
+  const marginRisk = computeRisk(null, latest.net_margin_pct);
+
   el.innerHTML = `
     <div class="profit-tile">
       <span class="profit-label">Quoted</span>
       <span class="profit-value">${moneyStr(latest.quoted_value)}</span>
     </div>
-    <div class="profit-tile profit-tile-emphasis">
+    <div class="profit-tile profit-tile-emphasis profit-tile-${risk}">
       <span class="profit-label">Net margin</span>
       <span class="profit-value ${latest.net_margin < 0 ? 'negative' : ''}">${moneyStr(latest.net_margin)}</span>
     </div>
     <div class="profit-tile">
       <span class="profit-label">Net margin %</span>
-      <span class="profit-value ${latest.net_margin_pct !== null && latest.net_margin_pct < 0 ? 'negative' : ''}">${pctStr(latest.net_margin_pct)}</span>
+      <span class="profit-value tile-${marginRisk}">${pctStr(latest.net_margin_pct)}</span>
     </div>
     <div class="profit-tile">
       <span class="profit-label">Gross margin</span>
@@ -98,7 +119,7 @@ function renderStats(latest) {
     </div>
     <div class="profit-tile">
       <span class="profit-label">Hours used %</span>
-      <span class="profit-value">${pctStr(latest.pct_actual_vs_estimate_hours)}</span>
+      <span class="profit-value tile-${hoursRisk}">${pctStr(hoursPct)}</span>
     </div>
   `;
 }

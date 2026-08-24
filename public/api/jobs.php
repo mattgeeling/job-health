@@ -5,6 +5,8 @@ require_once __DIR__ . '/../../lib/db.php';
 
 $pdo = db();
 
+$lastSyncedAt = $pdo->query('SELECT MAX(last_synced_at) FROM jobs')->fetchColumn();
+
 $rows = $pdo->query(
     'SELECT j.id, j.job_number, j.title, j.client_name, j.handler_name, j.date_due,
             s.snapshot_date, s.quoted_value, s.estimate_hours, s.actual_hours,
@@ -34,4 +36,4 @@ foreach ($rows as &$row) {
 }
 unset($row);
 
-echo json_encode(['jobs' => $rows]);
+echo json_encode(['jobs' => $rows, 'last_synced_at' => $lastSyncedAt]);

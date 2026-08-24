@@ -113,6 +113,12 @@ body {
   color: var(--red);
 }
 
+.last-synced {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-left: auto;
+}
+
 .profit-panel {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -161,6 +167,61 @@ body {
 
 .profit-tile-emphasis .profit-value.negative {
   color: #ffd9d4;
+}
+
+.profit-tile-emphasis.profit-tile-red {
+  background: var(--red);
+}
+
+.profit-tile-emphasis.profit-tile-amber {
+  background: var(--amber);
+}
+
+.profit-value.tile-red {
+  color: var(--red);
+}
+
+.profit-value.tile-amber {
+  color: var(--amber);
+}
+
+.profit-value.tile-green {
+  color: var(--green);
+}
+
+.job-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.job-title-row h1 {
+  margin: 0;
+}
+
+.risk-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.risk-badge-red {
+  background: var(--red-bg);
+  color: var(--red);
+}
+
+.risk-badge-amber {
+  background: var(--amber-bg);
+  color: var(--amber);
+}
+
+.risk-badge-green {
+  background: var(--green-bg);
+  color: var(--green);
 }
 
 .summary {
