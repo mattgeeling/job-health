@@ -494,6 +494,23 @@ body {
   color: var(--ink-soft);
 }
 
+.delivery-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 12px 0 16px;
+}
+
+.delivery-days {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+#deliveryTable {
+  margin-top: 0;
+}
+
 .burn-bars {
   display: flex;
   flex-direction: column;

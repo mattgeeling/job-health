@@ -75,8 +75,54 @@ function applyFilter() {
   const filtered = handler ? allJobs.filter(j => j.handler_name === handler) : allJobs;
   renderProfitPanel(filtered);
   renderHighlights(filtered);
+  renderDeliveryEfficiency(filtered);
   renderSummary(filtered);
   renderTable(filtered);
+}
+
+function renderDeliveryEfficiency(jobs) {
+  const withEstimate = jobs.filter(j => Number(j.estimate_hours) > 0);
+  const overJobs = withEstimate.filter(j => Number(j.actual_hours) > Number(j.estimate_hours));
+
+  const totalOverHours = overJobs.reduce((sum, j) => sum + (Number(j.actual_hours) - Number(j.estimate_hours)), 0);
+  const totalOverDays = totalOverHours / 7.5;
+
+  const statsEl = document.getElementById('deliveryStats');
+  statsEl.innerHTML = `
+    <div class="profit-tile">
+      <span class="profit-label">Over-delivered hours</span>
+      <span class="profit-value">${totalOverHours.toFixed(0)}h <span class="delivery-days">(~${totalOverDays.toFixed(0)} working days)</span></span>
+    </div>
+    <div class="profit-tile">
+      <span class="profit-label">Jobs currently over estimate</span>
+      <span class="profit-value">${overJobs.length} <span class="delivery-days">of ${withEstimate.length}</span></span>
+    </div>
+  `;
+
+  const sorted = [...overJobs].sort((a, b) =>
+    (Number(b.actual_hours) - Number(b.estimate_hours)) - (Number(a.actual_hours) - Number(a.estimate_hours))
+  );
+
+  const body = document.getElementById('deliveryTableBody');
+  if (sorted.length === 0) {
+    body.innerHTML = '<tr><td colspan="4" class="chart-note">No jobs currently over their estimated hours.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = sorted.map(j => {
+    const over = Number(j.actual_hours) - Number(j.estimate_hours);
+    return `
+      <tr class="job-row" onclick="location.href='job.html?job=${encodeURIComponent(j.job_number)}'">
+        <td>
+          <span class="job-number">${j.job_number}</span>
+          <span class="job-title">${escapeHtml(j.title || '')}</span>
+        </td>
+        <td>${escapeHtml(j.handler_name || '')}</td>
+        <td><strong>+${over.toFixed(0)}h</strong></td>
+        <td>${pct(j.net_margin_pct)}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function renderHighlights(jobs) {
