@@ -389,6 +389,10 @@ body {
   margin-top: 16px;
 }
 
+#deliverySection {
+  margin-bottom: 24px;
+}
+
 .recommended-charge {
   display: flex;
   flex-direction: column;
