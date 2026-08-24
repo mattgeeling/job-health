@@ -134,7 +134,14 @@ function renderHighlights(jobs) {
   }
 
   const best = withMargin.reduce((a, b) => Number(b.net_margin) > Number(a.net_margin) ? b : a);
-  const worst = withMargin.reduce((a, b) => Number(b.net_margin) < Number(a.net_margin) ? b : a);
+
+  // "Biggest risk" must actually BE at risk (red) — picking the lowest
+  // net profit across all jobs would flag a healthy, 70%-margin job just
+  // because its profit happened to be the smallest positive number.
+  const redJobs = withMargin.filter(j => j.risk === 'red');
+  const worst = redJobs.length > 0
+    ? redJobs.reduce((a, b) => Number(b.net_margin) < Number(a.net_margin) ? b : a)
+    : null;
 
   const card = (job, kind) => `
     <a class="highlight-card highlight-card-${kind}" href="job.html?job=${encodeURIComponent(job.job_number)}">
@@ -146,9 +153,14 @@ function renderHighlights(jobs) {
     </a>
   `;
 
-  el.innerHTML = (best === worst)
-    ? card(best, 'best')
-    : card(best, 'best') + card(worst, 'worst');
+  const noRiskCard = `
+    <div class="highlight-card highlight-card-best">
+      <span class="highlight-kicker">Biggest risk</span>
+      <span class="highlight-job">No jobs currently flagged red</span>
+    </div>
+  `;
+
+  el.innerHTML = card(best, 'best') + (worst && worst !== best ? card(worst, 'worst') : noRiskCard);
 }
 
 function renderProfitPanel(jobs) {
