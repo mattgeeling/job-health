@@ -33,13 +33,15 @@ body {
 .topbar-brand {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
 }
 
 .topbar-logo {
-  height: 44px;
+  height: 72px;
   width: auto;
   flex-shrink: 0;
+  order: 2;
 }
 
 .topbar h1 {
@@ -586,6 +588,19 @@ body {
 .burn-fill-green { background: var(--green); }
 .burn-fill-amber { background: var(--amber); }
 .burn-fill-red { background: var(--red); }
+
+.delivery-line {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  background: var(--red-bg);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.delivery-line:empty {
+  display: none;
+}
 
 .burn-marker {
   position: absolute;

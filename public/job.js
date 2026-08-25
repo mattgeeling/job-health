@@ -72,6 +72,7 @@ async function loadJob() {
 
   renderStats(latest, risk);
   renderBurnBars(latest);
+  renderDeliveryLine(latest);
   renderRecommendedCharge(latest);
   document.getElementById('notesInput').value = job.notes || '';
 
@@ -189,6 +190,24 @@ function renderBurnBars(latest) {
       </div>
     `;
   }).join('');
+}
+
+const CHARGEABLE_DAY_RATE = 825;
+
+function renderDeliveryLine(latest) {
+  const el = document.getElementById('deliveryLine');
+  el.textContent = '';
+  if (!latest) return;
+
+  const estHours = Number(latest.estimate_hours ?? 0);
+  const actHours = Number(latest.actual_hours ?? 0);
+  if (estHours <= 0 || actHours <= estHours) return;
+
+  const overHours = actHours - estHours;
+  const overDays = overHours / 7.5;
+  const value = overDays * CHARGEABLE_DAY_RATE;
+
+  el.innerHTML = `<strong>+${overHours.toFixed(0)}h</strong> over estimate — roughly <strong>${overDays.toFixed(1)} working days</strong>, worth about <strong>${moneyStr(value)}</strong> at £${CHARGEABLE_DAY_RATE}/day if that time had been chargeable elsewhere.`;
 }
 
 function renderRecommendedCharge(latest) {

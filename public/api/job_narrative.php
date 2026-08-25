@@ -41,6 +41,11 @@ $actHours = (float) $latest['actual_hours'];
 $quoted = (float) $latest['quoted_value'];
 $hoursPct = $estHours > 0 ? round(($actHours / $estHours) * 100) : null;
 
+// Passing raw unrounded decimals (e.g. "13149.05") into the prompt led to
+// the model occasionally garbling them in prose (a stray ".05" left
+// dangling). Every number in the prompt now goes through this first.
+$fmt = fn($n) => number_format((float) $n, 0);
+
 $impliedQuoteLine = '';
 if ($estHours > 0 && $actHours > $estHours && $quoted > 0) {
     $impliedQuote = $quoted * ($actHours / $estHours);
@@ -57,14 +62,14 @@ If an "Equivalent quote at actual hours" figure is given below, you may referenc
 
 Job: {$job['title']}
 Client: {$job['client_name']}
-Quoted: £{$quoted}
-Estimated hours: {$estHours}
-Actual hours: {$actHours}
+Quoted: £{$fmt($quoted)}
+Estimated hours: {$estHours}h
+Actual hours: {$actHours}h
 Hours used: {$hoursPct}% of estimate
-Estimated cost: £{$latest['estimate_cost']}
-Actual cost: £{$latest['actual_cost']}
-Net profit: £{$latest['net_margin']}
-Net margin: {$latest['net_margin_pct']}%
+Estimated cost: £{$fmt($latest['estimate_cost'])}
+Actual cost: £{$fmt($latest['actual_cost'])}
+Net profit: £{$fmt($latest['net_margin'])}
+Net margin: {$fmt($latest['net_margin_pct'])}%
 {$impliedQuoteLine}
 PROMPT;
 
