@@ -70,9 +70,24 @@ function populateHandlerFilter(jobs) {
   });
 }
 
+function initSearch() {
+  const input = document.getElementById('jobSearch');
+  input.addEventListener('input', applyFilter);
+}
+
 function applyFilter() {
   const handler = document.getElementById('handlerFilter').value;
-  const filtered = handler ? allJobs.filter(j => j.handler_name === handler) : allJobs;
+  const query = document.getElementById('jobSearch').value.trim().toLowerCase();
+
+  let filtered = handler ? allJobs.filter(j => j.handler_name === handler) : allJobs;
+  if (query) {
+    filtered = filtered.filter(j =>
+      (j.job_number || '').toLowerCase().includes(query) ||
+      (j.title || '').toLowerCase().includes(query) ||
+      (j.client_name || '').toLowerCase().includes(query)
+    );
+  }
+
   renderProfitPanel(filtered);
   renderHighlights(filtered);
   renderDeliveryEfficiency(filtered);
@@ -206,7 +221,7 @@ function renderProfitPanel(jobs) {
 }
 
 function riskWeight(risk) {
-  return { red: 0, amber: 1, green: 2 }[risk] ?? 3;
+  return { red: 0, unquoted: 0, amber: 1, green: 2 }[risk] ?? 3;
 }
 
 function renderSummary(jobs) {
@@ -248,7 +263,7 @@ function renderTable(jobs) {
 
   const body = document.getElementById('jobTableBody');
   body.innerHTML = sorted.map(j => `
-    <tr class="job-row" onclick="location.href='job.html?job=${encodeURIComponent(j.job_number)}'">
+    <tr class="job-row ${j.risk === 'unquoted' ? 'job-row-unquoted' : ''}" onclick="location.href='job.html?job=${encodeURIComponent(j.job_number)}'">
       <td><span class="risk-dot ${j.risk}"></span></td>
       <td>
         <span class="job-number">${j.job_number}</span>
@@ -274,4 +289,5 @@ function escapeHtml(str) {
 }
 
 initSyncButton();
+initSearch();
 loadJobs();

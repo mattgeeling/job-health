@@ -30,6 +30,18 @@ body {
   background: var(--surface);
 }
 
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbar-logo {
+  height: 44px;
+  width: auto;
+  flex-shrink: 0;
+}
+
 .topbar h1 {
   margin: 0;
   font-size: 22px;
@@ -76,7 +88,8 @@ body {
   letter-spacing: 0.04em;
 }
 
-.controls select {
+.controls select,
+.controls .job-search {
   padding: 6px 10px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -84,6 +97,10 @@ body {
   color: var(--ink);
   font-size: 13px;
   min-width: 200px;
+}
+
+.controls .job-search {
+  font-family: inherit;
 }
 
 .sync-btn {
@@ -368,6 +385,14 @@ body {
 
 .job-row {
   cursor: pointer;
+}
+
+.job-table tbody tr.job-row-unquoted {
+  background: var(--red-bg);
+}
+
+.job-table tbody tr.job-row-unquoted:hover {
+  background: #f6d9d5;
 }
 
 .job-detail-layout {

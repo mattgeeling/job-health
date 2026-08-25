@@ -8,12 +8,18 @@
 </head>
 <body>
 <header class="topbar">
-  <h1>Job Health</h1>
-  <p class="topbar-sub">Open live jobs — margin &amp; hours tracker &middot; <a class="back-link" href="leaderboard.html">Handler leaderboard &rarr;</a></p>
+  <div class="topbar-brand">
+    <img src="fuzzy-duck-logo.png" alt="Fuzzy Duck" class="topbar-logo">
+    <div>
+      <h1>Job Health</h1>
+      <p class="topbar-sub">Open live jobs — margin &amp; hours tracker &middot; <a class="back-link" href="leaderboard.html">Handler leaderboard &rarr;</a></p>
+    </div>
+  </div>
 </header>
 
 <main class="main">
   <div class="controls">
+    <input type="search" id="jobSearch" class="job-search" placeholder="Search job, client, title…">
     <label for="handlerFilter">Handler</label>
     <select id="handlerFilter">
       <option value="">All handlers</option>
