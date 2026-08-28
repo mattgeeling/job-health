@@ -12,66 +12,25 @@
     <img src="fuzzy-duck-logo.png" alt="Fuzzy Duck" class="topbar-logo">
     <div>
       <h1>Job Health</h1>
-      <p class="topbar-sub">Open live jobs — margin &amp; hours tracker &middot; <a class="back-link" href="leaderboard.html">Handler leaderboard &rarr;</a></p>
+      <p class="topbar-sub">Profit, delivery, and pipeline tracking</p>
     </div>
   </div>
 </header>
 
 <main class="main">
-  <div class="controls">
-    <input type="search" id="jobSearch" class="job-search" placeholder="Search job, client, title…">
-    <label for="handlerFilter">Handler</label>
-    <select id="handlerFilter">
-      <option value="">All handlers</option>
-    </select>
-    <button id="syncBtn" class="sync-btn" type="button">Sync now</button>
-    <span class="sync-status" id="syncStatus"></span>
-    <span class="last-synced" id="lastSynced"></span>
+  <div class="landing-grid">
+    <a class="landing-card" href="dashboard.html">
+      <span class="landing-kicker">Live jobs</span>
+      <span class="landing-title">Job Health Dashboard</span>
+      <span class="landing-desc">Margin, delivery efficiency, and risk across every open live job.</span>
+    </a>
+    <a class="landing-card" href="pipeline.html">
+      <span class="landing-kicker">Upcoming work</span>
+      <span class="landing-title">Pipeline</span>
+      <span class="landing-desc">Short and longer-term opportunities not yet won.</span>
+    </a>
   </div>
-
-  <div class="profit-panel" id="profitPanel"></div>
-
-  <div class="highlight-row" id="highlightRow"></div>
-
-  <section class="chart-section" id="deliverySection">
-    <h2>Delivery efficiency</h2>
-    <p class="chart-note">Are we systematically over-delivering hours against what we estimated — and could that time be better used elsewhere?</p>
-    <div class="delivery-stats" id="deliveryStats"></div>
-    <table class="job-table" id="deliveryTable">
-      <thead>
-        <tr>
-          <th>Job</th>
-          <th>Handler</th>
-          <th>Over by</th>
-          <th>Net margin %</th>
-        </tr>
-      </thead>
-      <tbody id="deliveryTableBody"></tbody>
-    </table>
-  </section>
-
-  <div class="summary" id="summary"></div>
-
-  <table class="job-table" id="jobTable">
-    <thead>
-      <tr>
-        <th></th>
-        <th>Job</th>
-        <th>Client</th>
-        <th>Handler</th>
-        <th>Due</th>
-        <th>Quoted</th>
-        <th>Net profit</th>
-        <th>Net margin %</th>
-        <th>Hours (act/est)</th>
-        <th>Hours %</th>
-        <th>Notes</th>
-      </tr>
-    </thead>
-    <tbody id="jobTableBody"></tbody>
-  </table>
 </main>
 
-<script src="app.js"></script>
 </body>
 </html>

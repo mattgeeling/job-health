@@ -37,3 +37,19 @@ CREATE TABLE IF NOT EXISTS job_snapshots (
   UNIQUE KEY uniq_job_date (job_id, snapshot_date),
   FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS pipeline_jobs (
+  id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  job_number        VARCHAR(20) NOT NULL UNIQUE,
+  job_uuid          VARCHAR(40) NULL,
+  title             VARCHAR(255) NULL,
+  client_name       VARCHAR(255) NULL,
+  handler_name      VARCHAR(255) NULL,
+  job_type          VARCHAR(100) NULL,
+  date_in           DATE NULL,
+  date_due          DATE NULL,
+  is_active         TINYINT(1) NOT NULL DEFAULT 1,
+  last_synced_at    TIMESTAMP NULL,
+  created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;

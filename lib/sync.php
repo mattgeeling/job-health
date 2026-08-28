@@ -147,3 +147,61 @@ function run_job_sync(): array
 
     return ['live_jobs' => count($liveJobs), 'synced' => $synced];
 }
+
+/**
+ * Pulls the "Open opportunities" Synergist view (quote-stage jobs). Unlike
+ * live jobs, no per-job financials call is made here — quote-value fetching
+ * for hundreds of opportunities one at a time would be too slow for a
+ * button-triggered sync. Just the list data: who, what, when.
+ */
+function run_pipeline_sync(): array
+{
+    $pdo = db();
+
+    $pdo->exec('UPDATE pipeline_jobs SET is_active = 0');
+
+    $upsert = $pdo->prepare(
+        'INSERT INTO pipeline_jobs (job_number, job_uuid, title, client_name, handler_name, job_type, date_in, date_due, is_active, last_synced_at)
+         VALUES (:job_number, :job_uuid, :title, :client_name, :handler_name, :job_type, :date_in, :date_due, 1, NOW())
+         ON DUPLICATE KEY UPDATE
+           job_uuid = VALUES(job_uuid),
+           title = VALUES(title),
+           client_name = VALUES(client_name),
+           handler_name = VALUES(handler_name),
+           job_type = VALUES(job_type),
+           date_in = VALUES(date_in),
+           date_due = VALUES(date_due),
+           is_active = 1,
+           last_synced_at = NOW()'
+    );
+
+    $pipelineView = synergist_config()['pipeline_view'];
+
+    $opportunities = [];
+    $page = 0;
+    do {
+        $batch = synergist_jobs_list(['view' => $pipelineView], $page, 200);
+        $opportunities = array_merge($opportunities, $batch);
+        $page++;
+    } while (count($batch) === 200);
+
+    foreach ($opportunities as $job) {
+        $upsert->execute([
+            'job_number' => $job['jobNumber'],
+            'job_uuid' => $job['jobUuid'] ?? null,
+            'title' => $job['jobDescription1stLine'] ?? null,
+            'client_name' => $job['jobClientName'] ?? null,
+            'handler_name' => $job['jobHandlerFullName'] ?? null,
+            'job_type' => $job['jobJobtypeDescription'] ?? null,
+            'date_in' => normalize_date($job['jobDateIn'] ?? null),
+            'date_due' => normalize_date($job['jobDateDue'] ?? null),
+        ]);
+    }
+
+    // The view's raw rows include duplicates (a job with multiple quote
+    // phases can appear more than once) — the upsert above already
+    // collapses these by job_number, so report the real distinct count.
+    $activeCount = (int) $pdo->query('SELECT COUNT(*) FROM pipeline_jobs WHERE is_active = 1')->fetchColumn();
+
+    return ['pipeline_jobs' => $activeCount];
+}

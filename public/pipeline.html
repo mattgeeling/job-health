@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Health — Pipeline</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-brand">
+    <img src="fuzzy-duck-logo.png" alt="Fuzzy Duck" class="topbar-logo">
+    <div>
+      <a href="index.html" class="back-link">&larr; Home</a>
+      <h1>Pipeline</h1>
+      <p class="topbar-sub">Open opportunities not yet won &middot; <a class="back-link" href="dashboard.html">Job Health dashboard &rarr;</a></p>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="controls">
+    <input type="search" id="pipelineSearch" class="job-search" placeholder="Search job, client, title…">
+    <button id="syncBtn" class="sync-btn" type="button">Sync now</button>
+    <span class="sync-status" id="syncStatus"></span>
+    <span class="last-synced" id="lastSynced"></span>
+  </div>
+
+  <p class="chart-note">Reflects Synergist's "Open opportunities" view as-is — includes any stale/dead quotes not yet tidied up there, so the count here won't be accurate until that view is cleaned up on the Synergist side.</p>
+
+  <div class="delivery-stats" id="pipelineStats"></div>
+
+  <table class="job-table" id="pipelineTable">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Job</th>
+        <th>Client</th>
+        <th>Handler</th>
+        <th>Type</th>
+        <th>Due</th>
+      </tr>
+    </thead>
+    <tbody id="pipelineTableBody"></tbody>
+  </table>
+</main>
+
+<script src="pipeline.js"></script>
+</body>
+</html>

@@ -14,6 +14,7 @@ return [
         'company' => 1,
         'version' => 7,
         'open_live_jobs_view' => 134,
+        'pipeline_view' => 46,
         'sync_secret' => 'REPLACE_ME',
     ],
     'gemini' => [

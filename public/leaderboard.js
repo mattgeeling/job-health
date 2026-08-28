@@ -20,7 +20,7 @@ async function loadLeaderboard() {
 
   const body = document.getElementById('leaderboardBody');
   body.innerHTML = handlers.map(h => `
-    <tr class="job-row" onclick="location.href='index.html?handler=${encodeURIComponent(h.handler_name)}'">
+    <tr class="job-row" onclick="location.href='dashboard.html?handler=${encodeURIComponent(h.handler_name)}'">
       <td><strong>${escapeHtml(h.handler_name)}</strong></td>
       <td>${h.job_count}</td>
       <td>${money(h.total_quoted)}</td>

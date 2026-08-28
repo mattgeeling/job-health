@@ -273,6 +273,51 @@ body {
   background: var(--surface);
 }
 
+.landing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  max-width: 800px;
+  margin: 40px auto 0;
+}
+
+.landing-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 32px 28px;
+  border-radius: 14px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  text-decoration: none;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.landing-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.landing-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+
+.landing-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.landing-desc {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
 .highlight-card-best {
   border-color: var(--green);
   background: var(--green-bg);
