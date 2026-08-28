@@ -198,23 +198,23 @@ function renderProfitPanel(jobs) {
   const el = document.getElementById('profitPanel');
   el.innerHTML = `
     <div class="profit-tile">
-      <span class="profit-label">Total quoted</span>
+      <span class="profit-label" title="Sum of quoted value across the jobs shown below. Jobs with no quote entered yet are excluded.">Total quoted</span>
       <span class="profit-value">${money(totalQuoted)}</span>
     </div>
     <div class="profit-tile profit-tile-emphasis">
-      <span class="profit-label">Net profit</span>
+      <span class="profit-label" title="Total quoted value minus total actual cost incurred so far, across the jobs shown below.">Net profit</span>
       <span class="profit-value ${totalNetMargin < 0 ? 'negative' : ''}">${money(totalNetMargin)}</span>
     </div>
     <div class="profit-tile">
-      <span class="profit-label">Blended net margin %</span>
+      <span class="profit-label" title="Total net profit as a percentage of total quoted value — the portfolio's overall margin, not an average of each job's individual margin %.">Blended net margin %</span>
       <span class="profit-value ${blendedNetPct !== null && blendedNetPct < 0 ? 'negative' : ''}">${pct(blendedNetPct)}</span>
     </div>
     <div class="profit-tile">
-      <span class="profit-label">Gross margin</span>
+      <span class="profit-label" title="Total quoted value minus actual external/purchase costs only — excludes labour/time cost, so this is always higher than net profit.">Gross margin</span>
       <span class="profit-value">${money(totalGrossMargin)}</span>
     </div>
     <div class="profit-tile">
-      <span class="profit-label">Margin eroded by red jobs</span>
+      <span class="profit-label" title="Total negative net profit from jobs currently flagged red (over budget or loss-making) — how much these jobs alone are dragging down the portfolio total.">Margin eroded by red jobs</span>
       <span class="profit-value ${atRiskMargin < 0 ? 'negative' : ''}">${money(atRiskMargin)}</span>
     </div>
   `;

@@ -73,7 +73,6 @@ async function loadJob() {
   renderStats(latest, risk);
   renderBurnBars(latest);
   renderDeliveryLine(latest);
-  renderRecommendedCharge(latest);
   document.getElementById('notesInput').value = job.notes || '';
 
   loadPhases(jobNumber);
@@ -195,10 +194,10 @@ function renderBurnBars(latest) {
 const CHARGEABLE_DAY_RATE = 825;
 
 function renderDeliveryLine(latest) {
-  const el = document.getElementById('deliveryLine');
-  el.textContent = '';
-  if (!latest) return;
+  const existing = document.getElementById('deliveryLineBox');
+  if (existing) existing.remove();
 
+  if (!latest) return;
   const estHours = Number(latest.estimate_hours ?? 0);
   const actHours = Number(latest.actual_hours ?? 0);
   if (estHours <= 0 || actHours <= estHours) return;
@@ -207,40 +206,13 @@ function renderDeliveryLine(latest) {
   const overDays = overHours / 7.5;
   const value = overDays * CHARGEABLE_DAY_RATE;
 
-  el.innerHTML = `<strong>+${overHours.toFixed(0)}h</strong> over estimate — roughly <strong>${overDays.toFixed(1)} working days</strong>, worth about <strong>${moneyStr(value)}</strong> at £${CHARGEABLE_DAY_RATE}/day if that time had been chargeable elsewhere.`;
-}
-
-function renderRecommendedCharge(latest) {
-  const existing = document.getElementById('recommendedChargeBox');
-  if (existing) existing.remove();
-
-  if (!latest) return;
-  const estHours = Number(latest.estimate_hours ?? 0);
-  const actHours = Number(latest.actual_hours ?? 0);
-  const quoted = Number(latest.quoted_value ?? 0);
-
-  if (estHours <= 0 || actHours <= estHours || quoted <= 0) {
-    return;
-  }
-
-  const impliedQuote = quoted * (actHours / estHours);
-  const additionalValue = impliedQuote - quoted;
-
   const box = document.createElement('div');
-  box.id = 'recommendedChargeBox';
-  box.className = 'recommended-charge';
-  box.innerHTML = `
-    <span class="recommended-charge-label">Equivalent quote at actual hours</span>
-    <span class="recommended-charge-value">${moneyStr(impliedQuote)}</span>
-    <div class="recommended-charge-note">
-      <p>Based on the actual hours delivered, this job would have had an equivalent quote of ${moneyStr(impliedQuote)}
-      at the original effective hourly rate (${moneyStr(quoted)} scaled by ${actHours.toFixed(1)}h actual vs ${estHours.toFixed(1)}h estimated).</p>
-      <p>This represents ${moneyStr(additionalValue)} of additional delivery value beyond the original quote — it does not mean the job lost money
-      or that this amount was required to be profitable; it simply values the extra hours delivered against the original estimate.</p>
-    </div>
-  `;
+  box.id = 'deliveryLineBox';
+  box.className = 'delivery-line';
+  box.innerHTML = `<strong>+${overHours.toFixed(0)}h</strong> over estimate — roughly <strong>${overDays.toFixed(1)} working days</strong>, worth about <strong>${moneyStr(value)}</strong> at £${CHARGEABLE_DAY_RATE}/day if that time had been chargeable elsewhere.`;
   document.querySelector('.notes-panel').appendChild(box);
 }
+
 
 function boldMarkdownToHtml(escapedText) {
   return escapedText.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');

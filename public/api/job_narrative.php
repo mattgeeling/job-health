@@ -46,11 +46,12 @@ $hoursPct = $estHours > 0 ? round(($actHours / $estHours) * 100) : null;
 // dangling). Every number in the prompt now goes through this first.
 $fmt = fn($n) => number_format((float) $n, 0);
 
-$impliedQuoteLine = '';
-if ($estHours > 0 && $actHours > $estHours && $quoted > 0) {
-    $impliedQuote = $quoted * ($actHours / $estHours);
-    $additionalValue = $impliedQuote - $quoted;
-    $impliedQuoteLine = "Equivalent quote at actual hours: £" . number_format($impliedQuote, 0) . " (£" . number_format($additionalValue, 0) . " of additional delivery value beyond the original quote — this is NOT what should have been charged or a shortfall, just the value of the extra hours delivered against the estimate).\n";
+$overHoursLine = '';
+if ($estHours > 0 && $actHours > $estHours) {
+    $overHours = $actHours - $estHours;
+    $overDays = $overHours / 7.5;
+    $capacityValue = $overDays * 825;
+    $overHoursLine = "Over-delivered: " . number_format($overHours, 0) . " hours beyond estimate (~" . number_format($overDays, 1) . " working days), worth roughly £" . number_format($capacityValue, 0) . " at the standard £825/day chargeable rate if that time had gone to other work — this is NOT a loss or a missed charge on this job, it's the value of the extra effort/capacity used.\n";
 }
 
 $prompt = <<<PROMPT
@@ -58,7 +59,7 @@ You are a plain-speaking financial analyst helping a creative agency review the 
 
 Wrap the key figures (money amounts, percentages, and hour counts) in double asterisks for bold, e.g. **£11,117** or **46% margin** or **362 hours** — but use no other markdown formatting of any kind.
 
-If an "Equivalent quote at actual hours" figure is given below, you may reference it as illustrating the value of the extra effort delivered — but never describe it as what the job "should have" been charged, a missed charge, or a shortfall, since the job was already profitable at the original quote.
+If an "Over-delivered" figure is given below, you may reference it as illustrating the value of the extra capacity used — but never describe it as what the job "should have" been charged, a missed charge, or a shortfall, since the job was already profitable at the original quote.
 
 Job: {$job['title']}
 Client: {$job['client_name']}
@@ -70,7 +71,7 @@ Estimated cost: £{$fmt($latest['estimate_cost'])}
 Actual cost: £{$fmt($latest['actual_cost'])}
 Net profit: £{$fmt($latest['net_margin'])}
 Net margin: {$fmt($latest['net_margin_pct'])}%
-{$impliedQuoteLine}
+{$overHoursLine}
 PROMPT;
 
 try {
