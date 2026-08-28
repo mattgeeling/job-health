@@ -159,6 +159,21 @@ body {
   background: var(--surface);
 }
 
+.bucket-tile {
+  text-decoration: none;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  transition: border-color 0.15s ease;
+}
+
+.bucket-tile:hover {
+  border-color: var(--border);
+}
+
+.bucket-tile-active {
+  border-color: var(--accent);
+}
+
 .profit-tile-emphasis {
   background: var(--accent);
 }

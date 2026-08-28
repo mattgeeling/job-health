@@ -72,43 +72,52 @@ function initSearch() {
   document.getElementById('pipelineSearch').addEventListener('input', applyFilter);
 }
 
+function getActiveBucket() {
+  return new URLSearchParams(location.search).get('bucket') || '';
+}
+
 function applyFilter() {
   const query = document.getElementById('pipelineSearch').value.trim().toLowerCase();
-  let filtered = allOpportunities;
+  let searchFiltered = allOpportunities;
   if (query) {
-    filtered = filtered.filter(o =>
+    searchFiltered = searchFiltered.filter(o =>
       (o.job_number || '').toLowerCase().includes(query) ||
       (o.title || '').toLowerCase().includes(query) ||
       (o.client_name || '').toLowerCase().includes(query)
     );
   }
-  renderStats(filtered);
-  renderTable(filtered);
+
+  const activeBucket = getActiveBucket();
+  const tableFiltered = activeBucket
+    ? searchFiltered.filter(o => o.bucket === activeBucket)
+    : searchFiltered;
+
+  renderStats(searchFiltered, activeBucket);
+  renderTable(tableFiltered);
 }
 
-function renderStats(rows) {
+function renderStats(rows, activeBucket) {
   const counts = { overdue: 0, short_term: 0, long_term: 0, unscheduled: 0 };
   for (const r of rows) counts[r.bucket] = (counts[r.bucket] || 0) + 1;
 
-  const el = document.getElementById('pipelineStats');
-  el.innerHTML = `
-    <div class="profit-tile">
-      <span class="profit-label" title="Opportunities due within the next 6 weeks.">Short term</span>
-      <span class="profit-value">${counts.short_term}</span>
-    </div>
-    <div class="profit-tile">
-      <span class="profit-label" title="Opportunities due more than 6 weeks out.">Long term</span>
-      <span class="profit-value">${counts.long_term}</span>
-    </div>
-    <div class="profit-tile">
-      <span class="profit-label" title="Due date has already passed without being won or lost in Synergist.">Overdue</span>
-      <span class="profit-value ${counts.overdue > 0 ? 'negative' : ''}">${counts.overdue}</span>
-    </div>
-    <div class="profit-tile">
-      <span class="profit-label" title="No due date set in Synergist.">No date set</span>
-      <span class="profit-value">${counts.unscheduled}</span>
-    </div>
+  const tile = (bucket, label, title, count, extraClass = '') => `
+    <a class="profit-tile bucket-tile ${activeBucket === bucket ? 'bucket-tile-active' : ''}" href="pipeline.html?bucket=${bucket}">
+      <span class="profit-label" title="${title}">${label}</span>
+      <span class="profit-value ${extraClass}">${count}</span>
+    </a>
   `;
+
+  const el = document.getElementById('pipelineStats');
+  el.innerHTML =
+    tile('short_term', 'Short term', 'Opportunities due within the next 6 weeks.', counts.short_term) +
+    tile('long_term', 'Long term', 'Opportunities due more than 6 weeks out.', counts.long_term) +
+    tile('overdue', 'Overdue', 'Due date has already passed without being won or lost in Synergist.', counts.overdue, counts.overdue > 0 ? 'negative' : '') +
+    tile('unscheduled', 'No date set', 'No due date set in Synergist.', counts.unscheduled);
+
+  const clearEl = document.getElementById('pipelineClearFilter');
+  clearEl.innerHTML = activeBucket
+    ? `Showing <strong>${BUCKET_LABEL[activeBucket]}</strong> only &middot; <a href="pipeline.html">Show all &rarr;</a>`
+    : '';
 }
 
 function renderTable(rows) {
