@@ -8,7 +8,7 @@ $pdo = db();
 $lastSyncedAt = $pdo->query('SELECT MAX(last_synced_at) FROM pipeline_jobs')->fetchColumn();
 
 $rows = $pdo->query(
-    'SELECT job_number, title, client_name, handler_name, job_type, date_in, date_due
+    'SELECT job_number, title, client_name, handler_name, job_type, date_in, date_due, quoted_value
      FROM pipeline_jobs
      WHERE is_active = 1
      ORDER BY date_due IS NULL, date_due ASC'

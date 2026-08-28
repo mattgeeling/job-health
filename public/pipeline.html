@@ -21,6 +21,10 @@
 <main class="main">
   <div class="controls">
     <input type="search" id="pipelineSearch" class="job-search" placeholder="Search job, client, title…">
+    <label for="handlerFilter">Handler</label>
+    <select id="handlerFilter">
+      <option value="">All handlers</option>
+    </select>
     <button id="syncBtn" class="sync-btn" type="button">Sync now</button>
     <span class="sync-status" id="syncStatus"></span>
     <span class="last-synced" id="lastSynced"></span>
@@ -39,7 +43,9 @@
         <th>Client</th>
         <th>Handler</th>
         <th>Type</th>
+        <th>Created</th>
         <th>Due</th>
+        <th>Value</th>
       </tr>
     </thead>
     <tbody id="pipelineTableBody"></tbody>

@@ -149,20 +149,21 @@ function run_job_sync(): array
 }
 
 /**
- * Pulls the "Open opportunities" Synergist view (quote-stage jobs). Unlike
- * live jobs, no per-job financials call is made here — quote-value fetching
- * for hundreds of opportunities one at a time would be too slow for a
- * button-triggered sync. Just the list data: who, what, when.
+ * Pulls the "Open opportunities" Synergist view (quote-stage jobs), including
+ * a per-job financials call for the quoted value — slower than the live job
+ * sync's per-job cost since there are more opportunities than live jobs, but
+ * needed to flag opportunities with no value entered.
  */
 function run_pipeline_sync(): array
 {
+    set_time_limit(0);
     $pdo = db();
 
     $pdo->exec('UPDATE pipeline_jobs SET is_active = 0');
 
     $upsert = $pdo->prepare(
-        'INSERT INTO pipeline_jobs (job_number, job_uuid, title, client_name, handler_name, job_type, date_in, date_due, is_active, last_synced_at)
-         VALUES (:job_number, :job_uuid, :title, :client_name, :handler_name, :job_type, :date_in, :date_due, 1, NOW())
+        'INSERT INTO pipeline_jobs (job_number, job_uuid, title, client_name, handler_name, job_type, date_in, date_due, quoted_value, is_active, last_synced_at)
+         VALUES (:job_number, :job_uuid, :title, :client_name, :handler_name, :job_type, :date_in, :date_due, :quoted_value, 1, NOW())
          ON DUPLICATE KEY UPDATE
            job_uuid = VALUES(job_uuid),
            title = VALUES(title),
@@ -171,6 +172,7 @@ function run_pipeline_sync(): array
            job_type = VALUES(job_type),
            date_in = VALUES(date_in),
            date_due = VALUES(date_due),
+           quoted_value = VALUES(quoted_value),
            is_active = 1,
            last_synced_at = NOW()'
     );
@@ -185,7 +187,22 @@ function run_pipeline_sync(): array
         $page++;
     } while (count($batch) === 200);
 
+    // Dedupe by job number before fetching financials — the view returns
+    // duplicate rows per job (one per quote phase), so without this we'd
+    // fetch the same job's quote value multiple times for nothing.
+    $seen = [];
     foreach ($opportunities as $job) {
+        if (isset($seen[$job['jobNumber']])) {
+            continue;
+        }
+        $seen[$job['jobNumber']] = true;
+
+        $quoted = null;
+        $fin = synergist_job_financials($job['jobNumber']);
+        if ($fin) {
+            $quoted = (float) ($fin['jobQuotedPrice'] ?? 0);
+        }
+
         $upsert->execute([
             'job_number' => $job['jobNumber'],
             'job_uuid' => $job['jobUuid'] ?? null,
@@ -195,6 +212,7 @@ function run_pipeline_sync(): array
             'job_type' => $job['jobJobtypeDescription'] ?? null,
             'date_in' => normalize_date($job['jobDateIn'] ?? null),
             'date_due' => normalize_date($job['jobDateDue'] ?? null),
+            'quoted_value' => $quoted,
         ]);
     }
 

@@ -20,12 +20,37 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function money(v) {
+  if (v === null || v === undefined) return '—';
+  return '£' + Number(v).toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
 async function loadPipeline() {
   const res = await fetch('api/pipeline.php');
   const { opportunities, last_synced_at } = await res.json();
   allOpportunities = opportunities;
+  populateHandlerFilter(opportunities);
   applyFilter();
   renderLastSynced(last_synced_at);
+}
+
+function populateHandlerFilter(opportunities) {
+  const select = document.getElementById('handlerFilter');
+  const handlers = [...new Set(opportunities.map(o => o.handler_name).filter(Boolean))].sort();
+
+  const saved = localStorage.getItem('pipelineHandlerFilter') || '';
+
+  select.innerHTML = '<option value="">All handlers</option>' +
+    handlers.map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('');
+
+  if (handlers.includes(saved)) {
+    select.value = saved;
+  }
+
+  select.addEventListener('change', () => {
+    localStorage.setItem('pipelineHandlerFilter', select.value);
+    applyFilter();
+  });
 }
 
 function renderLastSynced(isoString) {
@@ -78,7 +103,9 @@ function getActiveBucket() {
 
 function applyFilter() {
   const query = document.getElementById('pipelineSearch').value.trim().toLowerCase();
-  let searchFiltered = allOpportunities;
+  const handler = document.getElementById('handlerFilter').value;
+
+  let searchFiltered = handler ? allOpportunities.filter(o => o.handler_name === handler) : allOpportunities;
   if (query) {
     searchFiltered = searchFiltered.filter(o =>
       (o.job_number || '').toLowerCase().includes(query) ||
@@ -123,12 +150,20 @@ function renderStats(rows, activeBucket) {
 function renderTable(rows) {
   const body = document.getElementById('pipelineTableBody');
   if (rows.length === 0) {
-    body.innerHTML = '<tr><td colspan="6" class="chart-note">No opportunities match.</td></tr>';
+    body.innerHTML = '<tr><td colspan="8" class="chart-note">No opportunities match.</td></tr>';
     return;
   }
 
-  body.innerHTML = rows.map(o => `
-    <tr>
+  const sorted = [...rows].sort((a, b) => {
+    if (!a.date_due) return 1;
+    if (!b.date_due) return -1;
+    return a.date_due.localeCompare(b.date_due);
+  });
+
+  body.innerHTML = sorted.map(o => {
+    const noValue = o.quoted_value === null || o.quoted_value === undefined || Number(o.quoted_value) === 0;
+    return `
+    <tr class="${noValue ? 'job-row-unquoted' : ''}">
       <td><span class="risk-dot ${BUCKET_RISK_CLASS[o.bucket]}"></span></td>
       <td>
         <span class="job-number">${o.job_number}</span>
@@ -137,9 +172,12 @@ function renderTable(rows) {
       <td>${escapeHtml(o.client_name || '')}</td>
       <td>${escapeHtml(o.handler_name || '')}</td>
       <td>${escapeHtml(o.job_type || '')}</td>
+      <td>${o.date_in || '—'}</td>
       <td>${o.date_due || '—'} <span class="pct-chip ${BUCKET_RISK_CLASS[o.bucket]}">${BUCKET_LABEL[o.bucket]}</span></td>
+      <td>${money(o.quoted_value)}</td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 }
 
 initSyncButton();
