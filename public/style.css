@@ -107,10 +107,10 @@ body {
 
 .sync-btn {
   padding: 6px 14px;
-  border: 1px solid var(--accent);
+  border: 1px solid #f2c400;
   border-radius: 6px;
-  background: var(--accent);
-  color: #fff;
+  background: #f2c400;
+  color: #1f2430;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -412,8 +412,8 @@ body {
 .job-table th {
   text-align: left;
   padding: 10px 12px;
-  background: #efece5;
-  color: var(--ink-soft);
+  background: #3f3f3f;
+  color: #f1f1f1;
   font-weight: 600;
   font-size: 11px;
   text-transform: uppercase;
@@ -753,10 +753,10 @@ body {
 
 .notes-footer button {
   padding: 6px 14px;
-  border: 1px solid var(--accent);
+  border: 1px solid #f2c400;
   border-radius: 6px;
-  background: var(--accent);
-  color: #fff;
+  background: #f2c400;
+  color: #1f2430;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
