@@ -225,7 +225,12 @@ function run_pipeline_sync(): array
         $fin = $financials[$job['jobNumber']] ?? null;
         $quoted = $fin ? (float) ($fin['jobQuotedPrice'] ?? 0) : null;
         $weighted = $fin ? (float) ($fin['jobQuotedPriceWeighted'] ?? 0) : null;
-        $weighting = ($quoted !== null && $quoted > 0) ? (int) round(($weighted / $quoted) * 100) : null;
+        // Clamped defensively — the column is TINYINT UNSIGNED (0-255) and a
+        // stale/inconsistent Synergist record could otherwise put weighted
+        // above quoted (or negative), aborting the whole sync on one bad row.
+        $weighting = ($quoted !== null && $quoted > 0)
+            ? max(0, min(100, (int) round(($weighted / $quoted) * 100)))
+            : null;
 
         $upsert->execute([
             'job_number' => $job['jobNumber'],

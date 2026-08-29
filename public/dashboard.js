@@ -32,7 +32,7 @@ function initSyncButton() {
     status.classList.remove('sync-status-error');
 
     try {
-      const res = await fetch('api/refresh.php', { method: 'POST' });
+      const res = await fetch('api/refresh.php?target=jobs', { method: 'POST' });
       const result = await res.json();
       if (!res.ok || !result.ok) throw new Error(result.error || 'Sync failed');
 
@@ -40,7 +40,7 @@ function initSyncButton() {
       const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
       status.textContent = `Synced ${result.synced} jobs at ${now} (took ${result.duration_seconds}s)`;
     } catch (e) {
-      status.textContent = 'Sync failed — try again';
+      status.textContent = `Sync failed: ${e.message || 'try again'}`;
       status.classList.add('sync-status-error');
     } finally {
       btn.disabled = false;
