@@ -77,13 +77,14 @@ function synergist_job_financials(string $job): ?array
 }
 
 /**
- * Fetches financials for many jobs concurrently instead of one at a time.
- * Sequential calls at ~0.4-0.5s each made a 368-job sync take nearly 3
- * minutes, which hit IONOS's own request timeout — running $concurrency
- * requests in flight at once cuts that down to roughly total/$concurrency
- * of the sequential time. Returns [jobNumber => financials array or null].
+ * Runs the same modelstructure query for many jobs concurrently instead of
+ * one at a time. Sequential calls at ~0.4-0.5s each made a 368-job sync take
+ * nearly 3 minutes, which hit IONOS's own request timeout — running
+ * $concurrency requests in flight cuts that to roughly total/$concurrency of
+ * the sequential time. Returns [jobNumber => full `data` array (possibly
+ * empty) from that job's response].
  */
-function synergist_job_financials_batch(array $jobNumbers, int $concurrency = 15): array
+function synergist_batch_fetch(array $jobNumbers, string $modelstructure, string $endpoint, int $concurrency = 15): array
 {
     $cfg = synergist_config();
     $results = [];
@@ -99,10 +100,10 @@ function synergist_job_financials_batch(array $jobNumbers, int $concurrency = 15
                 'password' => $cfg['password'],
                 'company' => $cfg['company'],
                 'version' => $cfg['version'],
-                'modelstructure' => 'jobfinancial',
+                'modelstructure' => $modelstructure,
                 'job' => $job,
             ];
-            $url = rtrim($cfg['base_url'], '/') . '/jobs.json?' . http_build_query($query);
+            $url = rtrim($cfg['base_url'], '/') . "/{$endpoint}.json?" . http_build_query($query);
 
             $ch = curl_init($url);
             curl_setopt_array($ch, [
@@ -123,8 +124,8 @@ function synergist_job_financials_batch(array $jobNumbers, int $concurrency = 15
             $raw = curl_multi_getcontent($ch);
             $body = $raw !== null ? json_decode($raw, true) : null;
             $results[$job] = (is_array($body) && !empty($body['success']))
-                ? ($body['data'][0] ?? null)
-                : null;
+                ? ($body['data'] ?? [])
+                : [];
             curl_multi_remove_handle($multi, $ch);
         }
 
@@ -132,6 +133,32 @@ function synergist_job_financials_batch(array $jobNumbers, int $concurrency = 15
     }
 
     return $results;
+}
+
+/** Returns [jobNumber => financials array or null]. */
+function synergist_job_financials_batch(array $jobNumbers, int $concurrency = 15): array
+{
+    $raw = synergist_batch_fetch($jobNumbers, 'jobfinancial', 'jobs', $concurrency);
+    return array_map(fn($rows) => $rows[0] ?? null, $raw);
+}
+
+/**
+ * Returns [jobNumber => [['date' => 'YYYY-MM-DD', 'value' => float, 'cost' => float], ...]]
+ * — the individual planned billing lines for each job, letting a value be
+ * spread across the months it's actually due rather than dumped entirely
+ * into the job's single due date. `cost` (bpCost) is the planned cost
+ * entered manually against that specific billing line in Synergist.
+ */
+function synergist_job_billing_plan_batch(array $jobNumbers, int $concurrency = 15): array
+{
+    $raw = synergist_batch_fetch($jobNumbers, 'billingplandetails', 'billingplan', $concurrency);
+    return array_map(function ($lines) {
+        return array_map(fn($line) => [
+            'date' => $line['bpDate'] ?? null,
+            'value' => (float) ($line['bpPlannedValue'] ?? 0),
+            'cost' => (float) ($line['bpCost'] ?? 0),
+        ], $lines);
+    }, $raw);
 }
 
 /**

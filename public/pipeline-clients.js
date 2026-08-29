@@ -21,9 +21,27 @@ function bandFor(value) {
   return VALUE_BANDS.find(b => v >= b.min) || VALUE_BANDS[VALUE_BANDS.length - 1];
 }
 
+function sliderBar(label, pct, title) {
+  return `
+    <div class="client-card-slider" title="${title}">
+      <div class="client-card-slider-header">
+        <span>${label}</span>
+        <span>${pct.toFixed(0)}%</span>
+      </div>
+      <div class="client-card-slider-track">
+        <div class="client-card-slider-fill" style="width:${pct}%"></div>
+      </div>
+    </div>
+  `;
+}
+
 async function loadClients() {
-  const res = await fetch('api/pipeline_clients.php');
-  const { clients } = await res.json();
+  const [clientsRes, logosRes] = await Promise.all([
+    fetch('api/pipeline_clients.php'),
+    fetch('api/client_logos.php'),
+  ]);
+  const { clients } = await clientsRes.json();
+  const { logos } = await logosRes.json();
 
   const grid = document.getElementById('clientCardGrid');
   let lastBand = null;
@@ -35,12 +53,24 @@ async function loadClients() {
       html.push(`<div class="client-band-divider">${band.label}</div>`);
       lastBand = band.label;
     }
+
+    const filename = logos[c.client_name];
+    const logo = filename
+      ? `<img class="client-card-logo-img" src="client-logos/${encodeURIComponent(filename)}" alt="${escapeHtml(c.client_name)}">`
+      : `<div class="client-card-logo">${escapeHtml(c.client_name.slice(0, 1).toUpperCase())}</div>`;
+
+    const ratingPct = Number(c.rating || 0);
+    const totalValue = Number(c.total_value || 0);
+    const weightedPct = totalValue > 0 ? (Number(c.weighted_value || 0) / totalValue) * 100 : 0;
+
     html.push(`
       <a class="client-card" href="pipeline.html?client=${encodeURIComponent(c.client_name)}">
-        <div class="client-card-logo">${escapeHtml(c.client_name.slice(0, 1).toUpperCase())}</div>
+        ${logo}
         <span class="client-card-name">${escapeHtml(c.client_name)}</span>
         <span class="client-card-value">${money(c.total_value)}</span>
         <span class="client-card-count">${c.opportunity_count} opportunit${c.opportunity_count === 1 ? 'y' : 'ies'}</span>
+        ${sliderBar('Rating', ratingPct, 'Average conversion confidence across this client\'s opportunities (manually set per opportunity).')}
+        ${sliderBar('Weighting', weightedPct, 'Value-weighted confidence — how much the biggest deals pull the overall picture up or down.')}
       </a>
     `);
   }

@@ -7,7 +7,7 @@ $input = json_decode(file_get_contents('php://input'), true) ?? [];
 $jobNumber = $input['job_number'] ?? '';
 $status = $input['status'] ?? '';
 
-$allowed = ['sent', 'in_progress', 'needs_quoting', 'with_client', 'on_hold'];
+$allowed = ['in_progress', 'needs_quoting', 'with_client', 'on_hold'];
 if ($jobNumber === '' || !in_array($status, $allowed, true)) {
     http_response_code(400);
     echo json_encode(['ok' => false, 'error' => 'Invalid job_number or status']);

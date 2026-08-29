@@ -12,7 +12,8 @@ $rows = $pdo->query(
         SUM(quoted_value) AS total_value,
         SUM(CASE WHEN quoted_value IS NULL OR quoted_value = 0 THEN 1 ELSE 0 END) AS no_value_count
      FROM pipeline_jobs
-     WHERE is_active = 1 AND handler_name IS NOT NULL AND handler_name != \'\'
+     WHERE is_active = 1 AND (status IS NULL OR status != \'on_hold\')
+        AND handler_name IS NOT NULL AND handler_name != \'\'
      GROUP BY handler_name
      ORDER BY total_value DESC'
 )->fetchAll();

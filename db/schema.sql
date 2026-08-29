@@ -51,8 +51,19 @@ CREATE TABLE IF NOT EXISTS pipeline_jobs (
   quoted_value      DECIMAL(12,2) NULL,
   notes             TEXT NULL,
   status            VARCHAR(20) NULL,
+  weighting         TINYINT UNSIGNED NULL,
   is_active         TINYINT(1) NOT NULL DEFAULT 1,
   last_synced_at    TIMESTAMP NULL,
   created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS pipeline_billing_lines (
+  id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  job_number        VARCHAR(20) NOT NULL,
+  billing_date      DATE NULL,
+  planned_value     DECIMAL(12,2) NOT NULL DEFAULT 0,
+  planned_cost      DECIMAL(12,2) NOT NULL DEFAULT 0,
+  created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_job_number (job_number)
 ) ENGINE=InnoDB;

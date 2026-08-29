@@ -8,7 +8,7 @@ $pdo = db();
 $lastSyncedAt = $pdo->query('SELECT MAX(last_synced_at) FROM pipeline_jobs')->fetchColumn();
 
 $rows = $pdo->query(
-    'SELECT job_number, title, client_name, handler_name, job_type, date_in, date_due, quoted_value, notes, status
+    'SELECT job_number, title, client_name, handler_name, job_type, date_in, date_due, quoted_value, notes, status, weighting
      FROM pipeline_jobs
      WHERE is_active = 1
      ORDER BY date_due IS NULL, date_due ASC'
@@ -16,6 +16,15 @@ $rows = $pdo->query(
 
 $shortTermCutoff = (new DateTime('+42 days'))->format('Y-m-d');
 $today = date('Y-m-d');
+
+$billingLinesByJob = [];
+foreach ($pdo->query('SELECT job_number, billing_date, planned_value, planned_cost FROM pipeline_billing_lines') as $line) {
+    $billingLinesByJob[$line['job_number']][] = [
+        'date' => $line['billing_date'],
+        'value' => (float) $line['planned_value'],
+        'cost' => (float) $line['planned_cost'],
+    ];
+}
 
 foreach ($rows as &$row) {
     // No due date at all is treated as overdue too — arguably more
@@ -28,6 +37,7 @@ foreach ($rows as &$row) {
     } else {
         $row['bucket'] = 'long_term';
     }
+    $row['billing_lines'] = $billingLinesByJob[$row['job_number']] ?? [];
 }
 unset($row);
 

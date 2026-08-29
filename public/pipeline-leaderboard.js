@@ -16,9 +16,9 @@ async function loadLeaderboard() {
   const body = document.getElementById('leaderboardBody');
   body.innerHTML = handlers.map(h => `
     <tr class="job-row" onclick="location.href='pipeline.html?handler=${encodeURIComponent(h.handler_name)}'">
-      <td><strong>${escapeHtml(h.handler_name)}</strong></td>
-      <td>${h.opportunity_count}</td>
-      <td><strong>${money(h.total_value)}</strong></td>
+      <td class="leaderboard-name">${escapeHtml(h.handler_name)}</td>
+      <td class="leaderboard-count">${h.opportunity_count}</td>
+      <td class="leaderboard-value">${money(h.total_value)}</td>
       <td>${h.no_value_count > 0 ? `<span class="pct-chip red">${h.no_value_count}</span>` : '—'}</td>
     </tr>
   `).join('');

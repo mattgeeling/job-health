@@ -171,10 +171,12 @@ function run_pipeline_sync(): array
 
     // status is user-set (Sent / In progress / Needs quoting / On hold) and
     // must never be overwritten by a resync — only given a starting value
-    // the first time a job is seen, via INSERT ... IGNORE below.
+    // the first time a job is seen, via INSERT ... IGNORE below. weighting
+    // comes from Synergist's own jobQuotedPriceWeighted field, so unlike
+    // status it's refreshed on every sync rather than set once.
     $upsert = $pdo->prepare(
-        'INSERT INTO pipeline_jobs (job_number, job_uuid, title, client_name, handler_name, job_type, date_in, date_due, quoted_value, is_active, last_synced_at)
-         VALUES (:job_number, :job_uuid, :title, :client_name, :handler_name, :job_type, :date_in, :date_due, :quoted_value, 1, :now)
+        'INSERT INTO pipeline_jobs (job_number, job_uuid, title, client_name, handler_name, job_type, date_in, date_due, quoted_value, weighting, is_active, last_synced_at)
+         VALUES (:job_number, :job_uuid, :title, :client_name, :handler_name, :job_type, :date_in, :date_due, :quoted_value, :weighting, 1, :now)
          ON DUPLICATE KEY UPDATE
            job_uuid = VALUES(job_uuid),
            title = VALUES(title),
@@ -184,6 +186,7 @@ function run_pipeline_sync(): array
            date_in = VALUES(date_in),
            date_due = VALUES(date_due),
            quoted_value = VALUES(quoted_value),
+           weighting = VALUES(weighting),
            is_active = 1,
            last_synced_at = VALUES(last_synced_at)'
     );
@@ -211,10 +214,18 @@ function run_pipeline_sync(): array
     }
 
     $financials = synergist_job_financials_batch(array_keys($uniqueJobs));
+    $billingPlans = synergist_job_billing_plan_batch(array_keys($uniqueJobs));
+
+    $deleteLines = $pdo->prepare('DELETE FROM pipeline_billing_lines WHERE job_number = ?');
+    $insertLine = $pdo->prepare(
+        'INSERT INTO pipeline_billing_lines (job_number, billing_date, planned_value, planned_cost) VALUES (?, ?, ?, ?)'
+    );
 
     foreach ($uniqueJobs as $job) {
         $fin = $financials[$job['jobNumber']] ?? null;
         $quoted = $fin ? (float) ($fin['jobQuotedPrice'] ?? 0) : null;
+        $weighted = $fin ? (float) ($fin['jobQuotedPriceWeighted'] ?? 0) : null;
+        $weighting = ($quoted !== null && $quoted > 0) ? (int) round(($weighted / $quoted) * 100) : null;
 
         $upsert->execute([
             'job_number' => $job['jobNumber'],
@@ -226,13 +237,23 @@ function run_pipeline_sync(): array
             'date_in' => normalize_date($job['jobDateIn'] ?? null),
             'date_due' => normalize_date($job['jobDateDue'] ?? null),
             'quoted_value' => $quoted,
+            'weighting' => $weighting,
             'now' => $now,
         ]);
 
         $setDefaultStatus->execute([
             'job_number' => $job['jobNumber'],
-            'status' => $quoted ? 'sent' : 'needs_quoting',
+            'status' => $quoted ? 'with_client' : 'needs_quoting',
         ]);
+
+        $deleteLines->execute([$job['jobNumber']]);
+        foreach ($billingPlans[$job['jobNumber']] ?? [] as $line) {
+            $date = normalize_date($line['date']);
+            if ($date === null || $line['value'] == 0.0) {
+                continue;
+            }
+            $insertLine->execute([$job['jobNumber'], $date, $line['value'], $line['cost'] ?? 0]);
+        }
     }
 
     // The view's raw rows include duplicates (a job with multiple quote

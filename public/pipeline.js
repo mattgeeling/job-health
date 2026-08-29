@@ -1,4 +1,5 @@
 let allOpportunities = [];
+let forecastMonths = {};
 
 const BUCKET_LABEL = {
   overdue: 'Overdue',
@@ -13,7 +14,6 @@ const BUCKET_RISK_CLASS = {
 };
 
 const STATUS_LABEL = {
-  sent: 'Sent',
   in_progress: 'In progress',
   needs_quoting: 'Needs quoting',
   with_client: 'With client',
@@ -148,6 +148,134 @@ function applyFilter() {
 
   renderStats(openFiltered, activeBucket, onHoldCount, activeStatus);
   renderTable(tableFiltered);
+  renderForecast(openFiltered);
+}
+
+function renderForecast(rows) {
+  const byMonth = {};
+  const contributorsByMonth = {};
+
+  // Only opportunities with a real Synergist billing plan contribute —
+  // no approximating from the due date for the rest, per explicit request.
+  for (const o of rows) {
+    if (!o.billing_lines || o.billing_lines.length === 0) continue;
+    const confidence = Number(o.weighting ?? 50) / 100;
+
+    for (const line of o.billing_lines) {
+      if (!line.date) continue;
+      const month = line.date.slice(0, 7);
+      const maxFee = Number(line.value || 0);
+      const weighted = maxFee * confidence;
+      const cost = Number(line.cost || 0);
+
+      if (!byMonth[month]) byMonth[month] = { weighted: 0, maxFee: 0, cost: 0 };
+      byMonth[month].weighted += weighted;
+      byMonth[month].maxFee += maxFee;
+      byMonth[month].cost += cost;
+
+      if (!contributorsByMonth[month]) contributorsByMonth[month] = [];
+      contributorsByMonth[month].push({ job: o.job_number, title: o.title, weighted, maxFee, cost });
+    }
+  }
+
+  const months = Object.keys(byMonth).sort();
+  const el = document.getElementById('forecastChart');
+  const detail = document.getElementById('forecastDetail');
+  detail.innerHTML = '';
+
+  if (months.length === 0) {
+    forecastMonths = {};
+    el.innerHTML = '<p class="chart-note">No opportunities with a Synergist billing plan to forecast from yet.</p>';
+    return;
+  }
+
+  const maxValue = Math.max(...months.map(m => Math.max(byMonth[m].weighted, byMonth[m].maxFee, byMonth[m].cost)));
+  const formatter = new Intl.DateTimeFormat('en-GB', { month: 'short', year: '2-digit' });
+
+  forecastMonths = {};
+
+  el.innerHTML = `
+    <div class="forecast-legend">
+      <span class="forecast-legend-item"><span class="forecast-swatch forecast-swatch-weighted"></span>Weighted revenue</span>
+      <span class="forecast-legend-item"><span class="forecast-swatch forecast-swatch-maxfee"></span>Maximum fee</span>
+      <span class="forecast-legend-item"><span class="forecast-swatch forecast-swatch-cost"></span>Planned cost</span>
+    </div>
+    <div class="forecast-chart">
+      ${months.map(m => {
+        const { weighted, maxFee, cost } = byMonth[m];
+        const label = formatter.format(new Date(`${m}-01T00:00:00`));
+        forecastMonths[m] = { label, weighted, maxFee, cost, contributors: contributorsByMonth[m] };
+        const heightPct = (v) => maxValue > 0 ? Math.max((v / maxValue) * 100, 3) : 3;
+        return `
+          <div class="forecast-bar-col" data-month="${m}" tabindex="0" role="button" aria-label="Show breakdown for ${label}">
+            <div class="forecast-bar-group">
+              <div class="forecast-bar forecast-bar-weighted" style="height:${heightPct(weighted)}%"></div>
+              <div class="forecast-bar forecast-bar-maxfee" style="height:${heightPct(maxFee)}%"></div>
+              <div class="forecast-bar forecast-bar-cost" style="height:${heightPct(cost)}%"></div>
+            </div>
+            <span class="forecast-bar-label">${label}</span>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function showForecastDetail(month) {
+  const el = document.getElementById('forecastChart');
+  const detail = document.getElementById('forecastDetail');
+  const data = forecastMonths[month];
+
+  el.querySelectorAll('.forecast-bar-col').forEach(col => {
+    col.classList.toggle('forecast-bar-col-active', col.dataset.month === month);
+  });
+
+  if (!data) {
+    detail.innerHTML = '';
+    return;
+  }
+
+  const rows = data.contributors
+    .map(c => `
+      <tr>
+        <td>${escapeHtml(c.job)} ${escapeHtml(c.title || '')}</td>
+        <td>${money(c.weighted)}</td>
+        <td>${money(c.maxFee)}</td>
+        <td>${money(c.cost)}</td>
+      </tr>
+    `)
+    .join('');
+
+  detail.innerHTML = `
+    <h3 class="forecast-detail-title">${data.label}</h3>
+    <table class="forecast-detail-table">
+      <thead>
+        <tr><th>Opportunity</th><th>Weighted revenue</th><th>Maximum fee</th><th>Planned cost</th></tr>
+      </thead>
+      <tbody>${rows}</tbody>
+      <tfoot>
+        <tr><td>Total</td><td>${money(data.weighted)}</td><td>${money(data.maxFee)}</td><td>${money(data.cost)}</td></tr>
+      </tfoot>
+    </table>
+  `;
+}
+
+function initForecastDetail() {
+  const el = document.getElementById('forecastChart');
+  el.addEventListener('click', (e) => {
+    const col = e.target.closest('.forecast-bar-col');
+    if (!col) return;
+    const isActive = col.classList.contains('forecast-bar-col-active');
+    showForecastDetail(isActive ? null : col.dataset.month);
+  });
+  el.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const col = e.target.closest('.forecast-bar-col');
+    if (!col) return;
+    e.preventDefault();
+    const isActive = col.classList.contains('forecast-bar-col-active');
+    showForecastDetail(isActive ? null : col.dataset.month);
+  });
 }
 
 function renderStats(rows, activeBucket, onHoldCount, activeStatus) {
@@ -182,9 +310,9 @@ function renderStats(rows, activeBucket, onHoldCount, activeStatus) {
       <span class="profit-label" title="Opportunities marked On hold — hidden from the main view above. Click to see just these.">On hold</span>
       <span class="profit-value">${onHoldCount}</span>
     </a>` +
-    `<a class="profit-tile bucket-tile" href="pipeline-clients.html">
-      <span class="profit-label" title="Total pipeline value divided by number of distinct clients with an open opportunity. Click for the breakdown per client.">Value per client</span>
-      <span class="profit-value">${money(valuePerClient)}</span>
+    `<a class="profit-tile bucket-tile pipeline-leaderboard-tile" href="pipeline-clients.html">
+      <span class="profit-label">Value by client</span>
+      <span class="profit-value">View breakdown &rarr;</span>
     </a>` +
     `<a class="profit-tile bucket-tile pipeline-leaderboard-tile" href="pipeline-leaderboard.html">
       <span class="profit-label">Compare handlers</span>
@@ -208,7 +336,7 @@ function renderStats(rows, activeBucket, onHoldCount, activeStatus) {
 function renderTable(rows) {
   const body = document.getElementById('pipelineTableBody');
   if (rows.length === 0) {
-    body.innerHTML = '<tr><td colspan="10" class="chart-note">No opportunities match.</td></tr>';
+    body.innerHTML = '<tr><td colspan="9" class="chart-note">No opportunities match.</td></tr>';
     return;
   }
 
@@ -224,7 +352,7 @@ function renderTable(rows) {
   for (const o of sorted) {
     const year = o.date_due ? o.date_due.slice(0, 4) : 'No date';
     if (year !== lastYear) {
-      html.push(`<tr class="pipeline-year-divider"><td colspan="10">${year}</td></tr>`);
+      html.push(`<tr class="pipeline-year-divider"><td colspan="9">${year}</td></tr>`);
       lastYear = year;
     }
 
@@ -239,10 +367,8 @@ function renderTable(rows) {
         <span class="job-title">${escapeHtml(o.title || '')}</span>
       </td>
       <td class="client-cell">${escapeHtml(o.client_name || '')}</td>
-      <td>${escapeHtml(o.handler_name || '')}</td>
+      <td>${escapeHtml((o.handler_name || '').split(' ')[0])}</td>
       <td>${escapeHtml(o.job_type || '')}</td>
-      <td>${o.date_in || '—'}</td>
-      <td>${o.date_due || '—'} <span class="pct-chip ${BUCKET_RISK_CLASS[o.bucket]}">${BUCKET_LABEL[o.bucket]}</span></td>
       <td>${money(o.quoted_value)}</td>
       <td>
         <select class="pipeline-status-select" data-job="${o.job_number}">
@@ -251,6 +377,7 @@ function renderTable(rows) {
           ).join('')}
         </select>
       </td>
+      <td>${o.weighting === null || o.weighting === undefined ? '—' : (o.weighting === 0 ? `<span class="weighting-zero">0%</span>` : `${o.weighting}%`)}</td>
       <td>
         <textarea class="pipeline-notes-input" data-job="${o.job_number}" rows="1" placeholder="Add a note…">${escapeHtml(o.notes || '')}</textarea>
         <span class="pipeline-notes-status" data-status-for="${o.job_number}"></span>
@@ -327,4 +454,5 @@ initSyncButton();
 initSearch();
 initNotesSaving();
 initStatusSaving();
+initForecastDetail();
 loadPipeline();
