@@ -126,6 +126,7 @@ function applyFilter() {
 function renderStats(rows, activeBucket) {
   const counts = { overdue: 0, short_term: 0, long_term: 0, unscheduled: 0 };
   for (const r of rows) counts[r.bucket] = (counts[r.bucket] || 0) + 1;
+  const noValueCount = rows.filter(r => r.quoted_value === null || r.quoted_value === undefined || Number(r.quoted_value) === 0).length;
 
   const tile = (bucket, label, title, count, extraClass = '') => `
     <a class="profit-tile bucket-tile ${activeBucket === bucket ? 'bucket-tile-active' : ''}" href="pipeline.html?bucket=${bucket}">
@@ -139,18 +140,26 @@ function renderStats(rows, activeBucket) {
     tile('short_term', 'Short term', 'Opportunities due within the next 6 weeks.', counts.short_term) +
     tile('long_term', 'Long term', 'Opportunities due more than 6 weeks out.', counts.long_term) +
     tile('overdue', 'Overdue', 'Due date has already passed without being won or lost in Synergist.', counts.overdue, counts.overdue > 0 ? 'negative' : '') +
-    tile('unscheduled', 'No date set', 'No due date set in Synergist.', counts.unscheduled);
+    tile('unscheduled', 'No date set', 'No due date set in Synergist.', counts.unscheduled) +
+    `<div class="profit-tile">
+      <span class="profit-label" title="Opportunities with no quoted value entered in Synergist.">No value set</span>
+      <span class="profit-value ${noValueCount > 0 ? 'negative' : ''}">${noValueCount}</span>
+    </div>`;
 
   const clearEl = document.getElementById('pipelineClearFilter');
   clearEl.innerHTML = activeBucket
     ? `Showing <strong>${BUCKET_LABEL[activeBucket]}</strong> only &middot; <a href="pipeline.html">Show all &rarr;</a>`
     : '';
+
+  const totalValue = rows.reduce((sum, r) => sum + Number(r.quoted_value || 0), 0);
+  document.getElementById('pipelineTotalValue').textContent = money(totalValue);
+  document.getElementById('pipelineTotalCount').textContent = `${rows.length} open opportunit${rows.length === 1 ? 'y' : 'ies'}`;
 }
 
 function renderTable(rows) {
   const body = document.getElementById('pipelineTableBody');
   if (rows.length === 0) {
-    body.innerHTML = '<tr><td colspan="8" class="chart-note">No opportunities match.</td></tr>';
+    body.innerHTML = '<tr><td colspan="9" class="chart-note">No opportunities match.</td></tr>';
     return;
   }
 
@@ -160,9 +169,18 @@ function renderTable(rows) {
     return a.date_due.localeCompare(b.date_due);
   });
 
-  body.innerHTML = sorted.map(o => {
+  let lastYear = null;
+  const html = [];
+
+  for (const o of sorted) {
+    const year = o.date_due ? o.date_due.slice(0, 4) : 'No date';
+    if (year !== lastYear) {
+      html.push(`<tr class="pipeline-year-divider"><td colspan="9">${year}</td></tr>`);
+      lastYear = year;
+    }
+
     const noValue = o.quoted_value === null || o.quoted_value === undefined || Number(o.quoted_value) === 0;
-    return `
+    html.push(`
     <tr class="${noValue ? 'job-row-unquoted' : ''}">
       <td><span class="risk-dot ${BUCKET_RISK_CLASS[o.bucket]}"></span></td>
       <td>
@@ -175,11 +193,46 @@ function renderTable(rows) {
       <td>${o.date_in || '—'}</td>
       <td>${o.date_due || '—'} <span class="pct-chip ${BUCKET_RISK_CLASS[o.bucket]}">${BUCKET_LABEL[o.bucket]}</span></td>
       <td>${money(o.quoted_value)}</td>
+      <td>
+        <textarea class="pipeline-notes-input" data-job="${o.job_number}" rows="1" placeholder="Add a note…">${escapeHtml(o.notes || '')}</textarea>
+        <span class="pipeline-notes-status" data-status-for="${o.job_number}"></span>
+      </td>
     </tr>
-  `;
-  }).join('');
+  `);
+  }
+
+  body.innerHTML = html.join('');
+}
+
+function initNotesSaving() {
+  const body = document.getElementById('pipelineTableBody');
+  body.addEventListener('blur', async (e) => {
+    if (!e.target.classList || !e.target.classList.contains('pipeline-notes-input')) return;
+    const textarea = e.target;
+    const jobNumber = textarea.dataset.job;
+    const original = allOpportunities.find(o => o.job_number === jobNumber);
+    if (original && (original.notes || '') === textarea.value) return;
+
+    const status = body.querySelector(`[data-status-for="${jobNumber}"]`);
+    status.textContent = 'Saving…';
+    try {
+      const res = await fetch('api/pipeline_note.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_number: jobNumber, notes: textarea.value }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.ok) throw new Error();
+      if (original) original.notes = textarea.value;
+      status.textContent = 'Saved';
+      setTimeout(() => { status.textContent = ''; }, 2000);
+    } catch (e) {
+      status.textContent = 'Failed to save';
+    }
+  }, true);
 }
 
 initSyncButton();
 initSearch();
+initNotesSaving();
 loadPipeline();

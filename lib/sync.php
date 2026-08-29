@@ -33,9 +33,14 @@ function run_job_sync(): array
     // "Open live jobs" view (completed, put on hold, etc).
     $pdo->exec('UPDATE jobs SET is_active = 0');
 
+    // Bound as a PHP-computed value rather than SQL's NOW() — MySQL's
+    // session timezone on shared hosting doesn't reliably match UK time
+    // (misses BST), whereas date_default_timezone_set() in db.php does.
+    $now = date('Y-m-d H:i:s');
+
     $upsertJob = $pdo->prepare(
         'INSERT INTO jobs (job_number, job_uuid, title, client_name, handler_name, status, status_description, date_in, date_due, is_active, last_synced_at)
-         VALUES (:job_number, :job_uuid, :title, :client_name, :handler_name, :status, :status_description, :date_in, :date_due, 1, NOW())
+         VALUES (:job_number, :job_uuid, :title, :client_name, :handler_name, :status, :status_description, :date_in, :date_due, 1, :now)
          ON DUPLICATE KEY UPDATE
            job_uuid = VALUES(job_uuid),
            title = VALUES(title),
@@ -46,7 +51,7 @@ function run_job_sync(): array
            date_in = VALUES(date_in),
            date_due = VALUES(date_due),
            is_active = 1,
-           last_synced_at = NOW()'
+           last_synced_at = VALUES(last_synced_at)'
     );
 
     $upsertSnapshot = $pdo->prepare(
@@ -99,6 +104,7 @@ function run_job_sync(): array
             'status_description' => $job['jobStatusDescription'] ?? null,
             'date_in' => normalize_date($job['jobDateIn'] ?? null),
             'date_due' => normalize_date($job['jobDateDue'] ?? null),
+            'now' => $now,
         ]);
         $jobId = (int) $pdo->lastInsertId();
         if ($jobId === 0) {
@@ -161,9 +167,11 @@ function run_pipeline_sync(): array
 
     $pdo->exec('UPDATE pipeline_jobs SET is_active = 0');
 
+    $now = date('Y-m-d H:i:s');
+
     $upsert = $pdo->prepare(
         'INSERT INTO pipeline_jobs (job_number, job_uuid, title, client_name, handler_name, job_type, date_in, date_due, quoted_value, is_active, last_synced_at)
-         VALUES (:job_number, :job_uuid, :title, :client_name, :handler_name, :job_type, :date_in, :date_due, :quoted_value, 1, NOW())
+         VALUES (:job_number, :job_uuid, :title, :client_name, :handler_name, :job_type, :date_in, :date_due, :quoted_value, 1, :now)
          ON DUPLICATE KEY UPDATE
            job_uuid = VALUES(job_uuid),
            title = VALUES(title),
@@ -174,7 +182,7 @@ function run_pipeline_sync(): array
            date_due = VALUES(date_due),
            quoted_value = VALUES(quoted_value),
            is_active = 1,
-           last_synced_at = NOW()'
+           last_synced_at = VALUES(last_synced_at)'
     );
 
     $pipelineView = synergist_config()['pipeline_view'];
@@ -190,18 +198,16 @@ function run_pipeline_sync(): array
     // Dedupe by job number before fetching financials — the view returns
     // duplicate rows per job (one per quote phase), so without this we'd
     // fetch the same job's quote value multiple times for nothing.
-    $seen = [];
+    $uniqueJobs = [];
     foreach ($opportunities as $job) {
-        if (isset($seen[$job['jobNumber']])) {
-            continue;
-        }
-        $seen[$job['jobNumber']] = true;
+        $uniqueJobs[$job['jobNumber']] = $job;
+    }
 
-        $quoted = null;
-        $fin = synergist_job_financials($job['jobNumber']);
-        if ($fin) {
-            $quoted = (float) ($fin['jobQuotedPrice'] ?? 0);
-        }
+    $financials = synergist_job_financials_batch(array_keys($uniqueJobs));
+
+    foreach ($uniqueJobs as $job) {
+        $fin = $financials[$job['jobNumber']] ?? null;
+        $quoted = $fin ? (float) ($fin['jobQuotedPrice'] ?? 0) : null;
 
         $upsert->execute([
             'job_number' => $job['jobNumber'],
@@ -213,6 +219,7 @@ function run_pipeline_sync(): array
             'date_in' => normalize_date($job['jobDateIn'] ?? null),
             'date_due' => normalize_date($job['jobDateDue'] ?? null),
             'quoted_value' => $quoted,
+            'now' => $now,
         ]);
     }
 

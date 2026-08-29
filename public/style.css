@@ -557,6 +557,68 @@ body {
   margin: 12px 0 16px;
 }
 
+.pipeline-hero {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin: 12px 0 16px;
+  flex-wrap: wrap;
+}
+
+.pipeline-hero .delivery-stats {
+  flex: 1;
+  margin: 0;
+  min-width: 300px;
+}
+
+.pipeline-value-circle {
+  flex-shrink: 0;
+  width: 176px;
+  height: 176px;
+  border-radius: 50%;
+  background: #f2c400;
+  color: #1f2430;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 12px;
+}
+
+.pipeline-value-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+}
+
+.pipeline-value-amount {
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.pipeline-value-count {
+  font-size: 11px;
+  opacity: 0.85;
+  margin-top: 4px;
+}
+
+.pipeline-year-divider td {
+  padding: 8px 12px;
+  background: #efece5;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--border);
+}
+
 .delivery-days {
   font-size: 13px;
   font-weight: 400;
@@ -659,6 +721,27 @@ body {
   font-size: 13px;
   color: var(--ink);
   background: var(--bg);
+}
+
+.pipeline-notes-input {
+  width: 100%;
+  min-width: 160px;
+  min-height: 32px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+.pipeline-notes-status {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-top: 2px;
 }
 
 .notes-footer {

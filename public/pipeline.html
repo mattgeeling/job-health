@@ -32,7 +32,14 @@
 
   <p class="chart-note">Reflects Synergist's "Open opportunities" view as-is — includes any stale/dead quotes not yet tidied up there, so the count here won't be accurate until that view is cleaned up on the Synergist side.</p>
 
-  <div class="delivery-stats" id="pipelineStats"></div>
+  <div class="pipeline-hero">
+    <div class="pipeline-value-circle">
+      <span class="pipeline-value-label">Total value</span>
+      <span class="pipeline-value-amount" id="pipelineTotalValue">£0</span>
+      <span class="pipeline-value-count" id="pipelineTotalCount"></span>
+    </div>
+    <div class="delivery-stats" id="pipelineStats"></div>
+  </div>
   <p class="chart-note" id="pipelineClearFilter"></p>
 
   <table class="job-table" id="pipelineTable">
@@ -46,6 +53,7 @@
         <th>Created</th>
         <th>Due</th>
         <th>Value</th>
+        <th>Notes</th>
       </tr>
     </thead>
     <tbody id="pipelineTableBody"></tbody>

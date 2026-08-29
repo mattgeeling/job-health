@@ -1,5 +1,7 @@
 <?php
 
+date_default_timezone_set('Europe/London');
+
 function db(): PDO
 {
     static $pdo;

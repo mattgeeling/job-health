@@ -77,6 +77,64 @@ function synergist_job_financials(string $job): ?array
 }
 
 /**
+ * Fetches financials for many jobs concurrently instead of one at a time.
+ * Sequential calls at ~0.4-0.5s each made a 368-job sync take nearly 3
+ * minutes, which hit IONOS's own request timeout — running $concurrency
+ * requests in flight at once cuts that down to roughly total/$concurrency
+ * of the sequential time. Returns [jobNumber => financials array or null].
+ */
+function synergist_job_financials_batch(array $jobNumbers, int $concurrency = 15): array
+{
+    $cfg = synergist_config();
+    $results = [];
+    $chunks = array_chunk($jobNumbers, $concurrency);
+
+    foreach ($chunks as $chunk) {
+        $multi = curl_multi_init();
+        $handles = [];
+
+        foreach ($chunk as $job) {
+            $query = [
+                'user' => $cfg['user'],
+                'password' => $cfg['password'],
+                'company' => $cfg['company'],
+                'version' => $cfg['version'],
+                'modelstructure' => 'jobfinancial',
+                'job' => $job,
+            ];
+            $url = rtrim($cfg['base_url'], '/') . '/jobs.json?' . http_build_query($query);
+
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 30,
+            ]);
+            curl_multi_add_handle($multi, $ch);
+            $handles[$job] = $ch;
+        }
+
+        $running = null;
+        do {
+            curl_multi_exec($multi, $running);
+            curl_multi_select($multi);
+        } while ($running > 0);
+
+        foreach ($handles as $job => $ch) {
+            $raw = curl_multi_getcontent($ch);
+            $body = $raw !== null ? json_decode($raw, true) : null;
+            $results[$job] = (is_array($body) && !empty($body['success']))
+                ? ($body['data'][0] ?? null)
+                : null;
+            curl_multi_remove_handle($multi, $ch);
+        }
+
+        curl_multi_close($multi);
+    }
+
+    return $results;
+}
+
+/**
  * Per-phase (stage) breakdown for a single job: description + estimate vs
  * actual hours/cost. Two calls are needed since phaseslist has the
  * description and phasefinancial has the numbers; joined on phaseJobAndPhase.

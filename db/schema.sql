@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS pipeline_jobs (
   date_in           DATE NULL,
   date_due          DATE NULL,
   quoted_value      DECIMAL(12,2) NULL,
+  notes             TEXT NULL,
   is_active         TINYINT(1) NOT NULL DEFAULT 1,
   last_synced_at    TIMESTAMP NULL,
   created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
