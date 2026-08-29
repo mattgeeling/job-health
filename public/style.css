@@ -174,6 +174,20 @@ body {
   border-color: var(--accent);
 }
 
+.pipeline-leaderboard-tile {
+  background: #fdf6dc;
+  border-color: #f2c400;
+}
+
+.pipeline-leaderboard-tile .profit-label {
+  color: #8a6d00;
+}
+
+.pipeline-leaderboard-tile .profit-value {
+  color: #1f2430;
+  font-size: 16px;
+}
+
 .profit-tile-emphasis {
   background: var(--accent);
 }
@@ -286,6 +300,78 @@ body {
   border: 1px solid var(--border);
   text-decoration: none;
   background: var(--surface);
+}
+
+.client-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.client-band-divider {
+  grid-column: 1 / -1;
+  margin: 24px 0 4px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+
+.client-band-divider:first-child {
+  margin-top: 0;
+}
+
+.client-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-decoration: none;
+  text-align: center;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.client-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.client-card-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #efece5;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.client-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.client-card-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.client-card-count {
+  font-size: 12px;
+  color: var(--ink-soft);
 }
 
 .landing-grid {
@@ -431,6 +517,12 @@ body {
   white-space: nowrap;
 }
 
+.client-cell {
+  white-space: normal;
+  max-width: 140px;
+  word-wrap: break-word;
+}
+
 .job-table tbody tr:last-child td {
   border-bottom: none;
 }
@@ -460,6 +552,14 @@ body {
 
 .job-table tbody tr.job-row-unquoted:hover {
   background: #f6d9d5;
+}
+
+.job-table tbody tr.pipeline-row-on-hold {
+  background: var(--grey-bg);
+}
+
+.job-table tbody tr.pipeline-row-on-hold:hover {
+  background: #e2ded3;
 }
 
 .job-detail-layout {

@@ -13,9 +13,12 @@ if (PHP_SAPI !== 'cli') {
     }
 }
 
+$started = microtime(true);
 $result = run_job_sync();
 $pipelineResult = run_pipeline_sync();
+$duration = round(microtime(true) - $started, 1);
 
 echo "{$result['live_jobs']} live jobs found.\n";
 echo "{$result['synced']} job snapshots written for " . date('Y-m-d') . ".\n";
 echo "{$pipelineResult['pipeline_jobs']} pipeline opportunities synced.\n";
+echo "Completed in {$duration}s.\n";

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Health — Pipeline leaderboard</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-brand">
+    <img src="fuzzy-duck-logo.png" alt="Fuzzy Duck" class="topbar-logo">
+    <div>
+      <a href="pipeline.html" class="back-link">&larr; Pipeline</a>
+      <h1>Pipeline leaderboard</h1>
+      <p class="topbar-sub">Opportunity value by handler, across open pipeline</p>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <table class="job-table" id="leaderboardTable">
+    <thead>
+      <tr>
+        <th>Handler</th>
+        <th>Opportunities</th>
+        <th>Total value</th>
+        <th>No value set</th>
+      </tr>
+    </thead>
+    <tbody id="leaderboardBody"></tbody>
+  </table>
+</main>
+
+<script src="pipeline-leaderboard.js"></script>
+</body>
+</html>

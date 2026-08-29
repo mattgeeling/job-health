@@ -38,7 +38,7 @@ function initSyncButton() {
 
       await loadJobs();
       const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-      status.textContent = `Synced ${result.synced} jobs at ${now}`;
+      status.textContent = `Synced ${result.synced} jobs at ${now} (took ${result.duration_seconds}s)`;
     } catch (e) {
       status.textContent = 'Sync failed — try again';
       status.classList.add('sync-status-error');

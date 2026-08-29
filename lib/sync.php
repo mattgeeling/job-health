@@ -169,6 +169,9 @@ function run_pipeline_sync(): array
 
     $now = date('Y-m-d H:i:s');
 
+    // status is user-set (Sent / In progress / Needs quoting / On hold) and
+    // must never be overwritten by a resync — only given a starting value
+    // the first time a job is seen, via INSERT ... IGNORE below.
     $upsert = $pdo->prepare(
         'INSERT INTO pipeline_jobs (job_number, job_uuid, title, client_name, handler_name, job_type, date_in, date_due, quoted_value, is_active, last_synced_at)
          VALUES (:job_number, :job_uuid, :title, :client_name, :handler_name, :job_type, :date_in, :date_due, :quoted_value, 1, :now)
@@ -183,6 +186,10 @@ function run_pipeline_sync(): array
            quoted_value = VALUES(quoted_value),
            is_active = 1,
            last_synced_at = VALUES(last_synced_at)'
+    );
+
+    $setDefaultStatus = $pdo->prepare(
+        'UPDATE pipeline_jobs SET status = :status WHERE job_number = :job_number AND status IS NULL'
     );
 
     $pipelineView = synergist_config()['pipeline_view'];
@@ -220,6 +227,11 @@ function run_pipeline_sync(): array
             'date_due' => normalize_date($job['jobDateDue'] ?? null),
             'quoted_value' => $quoted,
             'now' => $now,
+        ]);
+
+        $setDefaultStatus->execute([
+            'job_number' => $job['jobNumber'],
+            'status' => $quoted ? 'sent' : 'needs_quoting',
         ]);
     }
 
