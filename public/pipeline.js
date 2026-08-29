@@ -174,7 +174,7 @@ function renderForecast(rows) {
       byMonth[month].cost += cost;
 
       if (!contributorsByMonth[month]) contributorsByMonth[month] = [];
-      contributorsByMonth[month].push({ job: o.job_number, title: o.title, weighted, maxFee, cost });
+      contributorsByMonth[month].push({ job: o.job_number, title: o.title, weighted, maxFee, cost, weightingPct: o.weighting });
     }
   }
 
@@ -214,6 +214,8 @@ function renderForecast(rows) {
               <div class="forecast-bar forecast-bar-cost" style="height:${heightPct(cost)}%"></div>
             </div>
             <span class="forecast-bar-label">${label}</span>
+            <span class="forecast-bar-value forecast-bar-value-weighted">Weighted: ${money(weighted)}</span>
+            <span class="forecast-bar-value forecast-bar-value-maxfee">Maximum: ${money(maxFee)}</span>
           </div>
         `;
       }).join('')}
@@ -239,6 +241,7 @@ function showForecastDetail(month) {
     .map(c => `
       <tr>
         <td>${escapeHtml(c.job)} ${escapeHtml(c.title || '')}</td>
+        <td>${c.weightingPct === null || c.weightingPct === undefined ? '—' : `${c.weightingPct}%`}</td>
         <td>${money(c.weighted)}</td>
         <td>${money(c.maxFee)}</td>
         <td>${money(c.cost)}</td>
@@ -250,11 +253,11 @@ function showForecastDetail(month) {
     <h3 class="forecast-detail-title">${data.label}</h3>
     <table class="forecast-detail-table">
       <thead>
-        <tr><th>Opportunity</th><th>Weighted revenue</th><th>Maximum fee</th><th>Planned cost</th></tr>
+        <tr><th>Opportunity</th><th>Weighted %</th><th>Weighted revenue</th><th>Maximum fee</th><th>Planned cost</th></tr>
       </thead>
       <tbody>${rows}</tbody>
       <tfoot>
-        <tr><td>Total</td><td>${money(data.weighted)}</td><td>${money(data.maxFee)}</td><td>${money(data.cost)}</td></tr>
+        <tr><td>Total</td><td></td><td>${money(data.weighted)}</td><td>${money(data.maxFee)}</td><td>${money(data.cost)}</td></tr>
       </tfoot>
     </table>
   `;
