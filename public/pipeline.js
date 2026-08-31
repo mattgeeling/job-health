@@ -361,7 +361,8 @@ function renderTable(rows) {
 
     const noValue = o.quoted_value === null || o.quoted_value === undefined || Number(o.quoted_value) === 0;
     const onHold = o.status === 'on_hold';
-    const rowClass = onHold ? 'pipeline-row-on-hold' : (noValue ? 'job-row-unquoted' : '');
+    const withClient = o.status === 'with_client';
+    const rowClass = onHold ? 'pipeline-row-on-hold' : (noValue ? 'job-row-unquoted' : (withClient ? 'pipeline-row-with-client' : ''));
     html.push(`
     <tr class="${rowClass}" data-row-for="${o.job_number}">
       <td><span class="risk-dot ${BUCKET_RISK_CLASS[o.bucket]}"></span></td>
@@ -439,11 +440,13 @@ function initStatusSaving() {
       const original = allOpportunities.find(o => o.job_number === jobNumber);
       if (original) original.status = select.value;
       if (row) {
-        row.classList.remove('job-row-unquoted', 'pipeline-row-on-hold');
+        row.classList.remove('job-row-unquoted', 'pipeline-row-on-hold', 'pipeline-row-with-client');
         if (select.value === 'on_hold') {
           row.classList.add('pipeline-row-on-hold');
         } else if (original && (original.quoted_value === null || Number(original.quoted_value) === 0)) {
           row.classList.add('job-row-unquoted');
+        } else if (select.value === 'with_client') {
+          row.classList.add('pipeline-row-with-client');
         }
       }
     } catch (e) {

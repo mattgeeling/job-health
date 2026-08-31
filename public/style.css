@@ -636,8 +636,8 @@ body {
 
 .client-cell {
   white-space: normal;
-  max-width: 140px;
-  word-wrap: break-word;
+  width: 250px;
+  overflow-wrap: break-word;
 }
 
 .job-table tbody tr:last-child td {
@@ -677,6 +677,14 @@ body {
 
 .job-table tbody tr.pipeline-row-on-hold:hover {
   background: #e2ded3;
+}
+
+.job-table tbody tr.pipeline-row-with-client {
+  background: var(--green-bg);
+}
+
+.job-table tbody tr.pipeline-row-with-client:hover {
+  background: #d9ecdf;
 }
 
 .job-detail-layout {
