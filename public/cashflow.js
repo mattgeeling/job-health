@@ -368,6 +368,34 @@ function renderEditRow(l) {
   `;
 }
 
+function initSyncButton() {
+  const btn = document.getElementById('syncBtn');
+  const status = document.getElementById('syncStatus');
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.textContent = 'Syncing…';
+    status.textContent = '';
+    status.classList.remove('sync-status-error');
+
+    try {
+      const res = await fetch('api/refresh.php?target=all', { method: 'POST' });
+      const result = await res.json();
+      if (!res.ok || !result.ok) throw new Error(result.error || 'Sync failed');
+
+      await loadCashflow();
+      const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      status.textContent = `Synced ${result.synced} live jobs and ${result.pipeline_jobs} opportunities at ${now} (took ${result.duration_seconds}s)`;
+    } catch (e) {
+      status.textContent = `Sync failed: ${e.message || 'try again'}`;
+      status.classList.add('sync-status-error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Sync now';
+    }
+  });
+}
+
 function initRangeToggle() {
   document.getElementById('cashflowRangeToggle').addEventListener('click', (e) => {
     const btn = e.target.closest('.cashflow-range-btn');
@@ -383,5 +411,6 @@ function initRangeToggle() {
 initDetailClicks();
 initManualEntryForm();
 initRangeToggle();
+initSyncButton();
 loadCashflow();
 loadManualEntries();
