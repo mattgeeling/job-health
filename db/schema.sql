@@ -78,6 +78,14 @@ CREATE TABLE IF NOT EXISTS job_billing_lines (
   INDEX idx_job_number (job_number)
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS manual_billing_lines (
+  id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  description       VARCHAR(255) NOT NULL,
+  billing_date      DATE NOT NULL,
+  value             DECIMAL(12,2) NOT NULL DEFAULT 0,
+  created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS handler_notes (
   handler_name      VARCHAR(255) NOT NULL PRIMARY KEY,
   notes             TEXT NULL,

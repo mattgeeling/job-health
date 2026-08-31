@@ -34,6 +34,18 @@
     </div>
     <div class="forecast-detail" id="cashflowDetail"></div>
   </section>
+
+  <section class="chart-section">
+    <h2>Manual entries</h2>
+    <p class="chart-note">For income released/recognised in a month other than when it was originally billed, or anything else not captured by Synergist's billing plan. The date here is when it should count towards the forecast above.</p>
+    <form id="manualEntryForm" class="manual-entry-form">
+      <input type="text" id="manualDescription" placeholder="Description" required>
+      <input type="date" id="manualDate" required>
+      <input type="number" id="manualValue" placeholder="Value (£)" step="0.01" required>
+      <button type="submit" class="sync-btn">Add</button>
+    </form>
+    <div id="manualEntryGroups"></div>
+  </section>
 </main>
 
 <script src="cashflow.js"></script>

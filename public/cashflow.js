@@ -27,12 +27,13 @@ function renderChart(lines) {
     const month = line.billing_date.slice(0, 7);
     if (month < currentMonth) continue;
 
-    const isLive = line.source === 'live';
-    const confidence = isLive ? 1 : (line.weighting === null ? 0.5 : Number(line.weighting) / 100);
+    const confidence = line.source === 'pipeline'
+      ? (line.weighting === null ? 0.5 : Number(line.weighting) / 100)
+      : 1;
     const value = Number(line.planned_value || 0) * confidence;
 
-    if (!byMonth[month]) byMonth[month] = { live: 0, pipeline: 0 };
-    byMonth[month][isLive ? 'live' : 'pipeline'] += value;
+    if (!byMonth[month]) byMonth[month] = { live: 0, pipeline: 0, manual: 0 };
+    byMonth[month][line.source] += value;
 
     if (!contributorsByMonth[month]) contributorsByMonth[month] = [];
     contributorsByMonth[month].push({
@@ -54,6 +55,7 @@ function renderChart(lines) {
   legendEl.innerHTML = `
     <span class="forecast-legend-item"><span class="forecast-swatch" style="background:#2f7a4f"></span>Live jobs (committed)</span>
     <span class="forecast-legend-item"><span class="forecast-swatch" style="background:rgba(242,196,0,0.6)"></span>Pipeline (weighted)</span>
+    <span class="forecast-legend-item"><span class="forecast-swatch" style="background:#3f6fa8"></span>Manual entries</span>
   `;
 
   if (months.length === 0) {
@@ -63,7 +65,7 @@ function renderChart(lines) {
     return;
   }
 
-  const maxValue = Math.max(...months.map(m => Math.max(byMonth[m].live, byMonth[m].pipeline)));
+  const maxValue = Math.max(...months.map(m => Math.max(byMonth[m].live, byMonth[m].pipeline, byMonth[m].manual)));
   let step = 5000;
   while (maxValue > 0 && Math.ceil(maxValue / step) > 10) step *= 2;
   const axisMax = maxValue > 0 ? Math.ceil(maxValue / step) * step : step;
@@ -78,19 +80,21 @@ function renderChart(lines) {
   cashflowMonths = {};
 
   chartEl.innerHTML = months.map(m => {
-    const { live, pipeline } = byMonth[m];
+    const { live, pipeline, manual } = byMonth[m];
     const label = formatter.format(new Date(`${m}-01T00:00:00`));
-    cashflowMonths[m] = { label, live, pipeline, contributors: contributorsByMonth[m] };
+    cashflowMonths[m] = { label, live, pipeline, manual, contributors: contributorsByMonth[m] };
     const heightPct = (v) => axisMax > 0 ? Math.max((v / axisMax) * 100, 3) : 3;
     return `
       <div class="forecast-bar-col" data-month="${m}" tabindex="0" role="button" aria-label="Show breakdown for ${label}">
         <div class="forecast-bar-group">
           <div class="forecast-bar" style="height:${heightPct(live)}%; background:#2f7a4f;"></div>
           <div class="forecast-bar" style="height:${heightPct(pipeline)}%; background:rgba(242,196,0,0.6);"></div>
+          <div class="forecast-bar" style="height:${heightPct(manual)}%; background:#3f6fa8;"></div>
         </div>
         <span class="forecast-bar-label">${label}</span>
         <span class="forecast-bar-value" style="color:#2f7a4f;">Live: ${money(live)}</span>
         <span class="forecast-bar-value" style="color:#8a6d00;">Pipeline: ${money(pipeline)}</span>
+        ${manual > 0 ? `<span class="forecast-bar-value" style="color:#3f6fa8;">Manual: ${money(manual)}</span>` : ''}
       </div>
     `;
   }).join('');
@@ -132,11 +136,12 @@ function showDetail(month) {
     return;
   }
 
+  const sourceLabel = { live: 'Live', pipeline: 'Pipeline', manual: 'Manual' };
   const rows = data.contributors
     .map(c => `
       <tr>
-        <td>${escapeHtml(c.job)} ${escapeHtml(c.title || '')}</td>
-        <td>${c.source === 'live' ? 'Live' : 'Pipeline'}</td>
+        <td>${c.source === 'manual' ? escapeHtml(c.title || '') : `${escapeHtml(c.job)} ${escapeHtml(c.title || '')}`}</td>
+        <td>${sourceLabel[c.source] || c.source}</td>
         <td>${money(c.value)}</td>
       </tr>
     `)
@@ -148,7 +153,7 @@ function showDetail(month) {
       <thead><tr><th>Job</th><th>Source</th><th>Value</th></tr></thead>
       <tbody>${rows}</tbody>
       <tfoot>
-        <tr><td>Total</td><td></td><td>${money(data.live + data.pipeline)}</td></tr>
+        <tr><td>Total</td><td></td><td>${money(data.live + data.pipeline + data.manual)}</td></tr>
       </tfoot>
     </table>
   `;
@@ -172,5 +177,87 @@ function initDetailClicks() {
   });
 }
 
+async function loadManualEntries() {
+  const res = await fetch('api/manual_billing_lines.php');
+  const { lines } = await res.json();
+  const container = document.getElementById('manualEntryGroups');
+
+  if (lines.length === 0) {
+    container.innerHTML = '<p class="chart-note">No manual entries yet.</p>';
+    return;
+  }
+
+  const byMonth = {};
+  for (const l of lines) {
+    const month = l.billing_date.slice(0, 7);
+    if (!byMonth[month]) byMonth[month] = [];
+    byMonth[month].push(l);
+  }
+
+  const months = Object.keys(byMonth).sort();
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const formatter = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' });
+
+  container.innerHTML = months.map(month => {
+    const entries = byMonth[month];
+    const total = entries.reduce((sum, l) => sum + Number(l.value || 0), 0);
+    const label = formatter.format(new Date(`${month}-01T00:00:00`));
+    const rows = entries.map(l => `
+      <tr>
+        <td>${escapeHtml(l.description)}</td>
+        <td>${l.billing_date}</td>
+        <td>${money(l.value)}</td>
+        <td><button type="button" class="manual-entry-delete" data-id="${l.id}">Delete</button></td>
+      </tr>
+    `).join('');
+
+    return `
+      <details class="manual-month-details" ${month === currentMonth ? 'open' : ''}>
+        <summary>${label} <span class="forecast-toggle-hint">${entries.length} entr${entries.length === 1 ? 'y' : 'ies'}, ${money(total)}</span></summary>
+        <table class="job-table">
+          <thead><tr><th>Description</th><th>Date</th><th>Value</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </details>
+    `;
+  }).join('');
+}
+
+function initManualEntryForm() {
+  const form = document.getElementById('manualEntryForm');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const description = document.getElementById('manualDescription').value.trim();
+    const billingDate = document.getElementById('manualDate').value;
+    const value = document.getElementById('manualValue').value;
+
+    await fetch('api/manual_billing_lines.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description, billing_date: billingDate, value }),
+    });
+
+    form.reset();
+    await loadManualEntries();
+    await loadCashflow();
+  });
+
+  document.getElementById('manualEntryGroups').addEventListener('click', async (e) => {
+    const btn = e.target.closest('.manual-entry-delete');
+    if (!btn) return;
+
+    await fetch('api/manual_billing_line_delete.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: Number(btn.dataset.id) }),
+    });
+
+    await loadManualEntries();
+    await loadCashflow();
+  });
+}
+
 initDetailClicks();
+initManualEntryForm();
 loadCashflow();
+loadManualEntries();

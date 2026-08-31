@@ -34,4 +34,17 @@ foreach ($pipelineLines as &$row) {
 }
 unset($row);
 
-echo json_encode(['lines' => array_merge($liveLines, $pipelineLines)]);
+// Manually logged income — e.g. amounts released/recognised in a month
+// other than when they were originally billed, which Synergist's billing
+// plan doesn't capture. Counted at full value, like live jobs.
+$manualLines = $pdo->query(
+    'SELECT id AS job_number, description AS title, NULL AS client_name, NULL AS weighting,
+            billing_date, value AS planned_value, 0 AS planned_cost
+     FROM manual_billing_lines'
+)->fetchAll();
+foreach ($manualLines as &$row) {
+    $row['source'] = 'manual';
+}
+unset($row);
+
+echo json_encode(['lines' => array_merge($liveLines, $pipelineLines, $manualLines)]);
