@@ -37,10 +37,10 @@ function renderChart(lines) {
     // spreadsheet), not raw billed value.
     const gp = (Number(line.planned_value || 0) - Number(line.planned_cost || 0)) * confidence;
     const bucket = line.source === 'manual'
-      ? (gp < 0 ? 'deferred' : 'released')
+      ? (line.type === 'defer' ? 'deferred' : (line.type === 'cost' ? 'cost' : 'released'))
       : line.source;
 
-    if (!byMonth[month]) byMonth[month] = { live: 0, pipeline: 0, released: 0, deferred: 0 };
+    if (!byMonth[month]) byMonth[month] = { live: 0, pipeline: 0, released: 0, deferred: 0, cost: 0 };
     byMonth[month][bucket] += gp;
 
     if (!contributorsByMonth[month]) contributorsByMonth[month] = [];
@@ -88,10 +88,10 @@ function renderChart(lines) {
   cashflowMonths = {};
 
   chartEl.innerHTML = months.map(m => {
-    const { live, pipeline, released, deferred } = byMonth[m];
+    const { live, pipeline, released, deferred, cost } = byMonth[m];
     const label = formatter.format(new Date(`${m}-01T00:00:00`));
-    const total = live + pipeline + released + deferred;
-    cashflowMonths[m] = { label, live, pipeline, released, deferred, contributors: contributorsByMonth[m] };
+    const total = live + pipeline + released + deferred + cost;
+    cashflowMonths[m] = { label, live, pipeline, released, deferred, cost, contributors: contributorsByMonth[m] };
     const heightPct = (v) => v <= 0 ? 0 : (axisMax > 0 ? Math.max((v / axisMax) * 100, 3) : 3);
     return `
       <div class="forecast-bar-col" data-month="${m}" tabindex="0" role="button" aria-label="Show breakdown for ${label}">
@@ -104,6 +104,7 @@ function renderChart(lines) {
         <span class="forecast-bar-value" style="color:#2f7a4f;">Live: ${money(live)}</span>
         <span class="forecast-bar-value" style="color:#8a6d00;">Pipeline: ${money(pipeline)}</span>
         <span class="forecast-bar-value" style="color:#3f6fa8;">Released: ${money(released)}</span>
+        <span class="forecast-bar-value negative">Costs: ${money(cost)}</span>
         <span class="cashflow-total-divider"></span>
         <span class="forecast-bar-value cashflow-total-value">Total: ${money(total)}</span>
       </div>
@@ -147,13 +148,20 @@ function showDetail(month) {
     return;
   }
 
-  const sourceLabel = { live: 'Live', pipeline: 'Pipeline', released: 'Released', deferred: 'Deferred' };
-  const isManualSource = (s) => s === 'released' || s === 'deferred';
+  const sourcePill = {
+    live: '<span class="pct-chip green">Live</span>',
+    pipeline: '<span class="pct-chip amber">Pipeline</span>',
+    released: '<span class="pct-chip green">Released</span>',
+    deferred: '<span class="pct-chip red">Deferred</span>',
+    cost: '<span class="pct-chip red">Cost</span>',
+  };
+  const isManualSource = (s) => s === 'released' || s === 'deferred' || s === 'cost';
+  const rowClass = { released: 'cashflow-row-released', deferred: 'cashflow-row-deferred', cost: 'cashflow-row-deferred' };
   const rows = data.contributors
     .map(c => `
-      <tr>
+      <tr class="${rowClass[c.source] || ''}">
         <td>${isManualSource(c.source) ? escapeHtml(c.title || '') : `${escapeHtml(c.job)} ${escapeHtml(c.title || '')}`}</td>
-        <td>${sourceLabel[c.source] || c.source}</td>
+        <td>${sourcePill[c.source] || c.source}</td>
         <td>${money(c.value)}</td>
       </tr>
     `)
@@ -165,7 +173,7 @@ function showDetail(month) {
       <thead><tr><th>Job</th><th>Source</th><th>GP</th></tr></thead>
       <tbody>${rows}</tbody>
       <tfoot>
-        <tr><td>Total</td><td></td><td>${money(data.live + data.pipeline + data.released + data.deferred)}</td></tr>
+        <tr><td>Total</td><td></td><td>${money(data.live + data.pipeline + data.released + data.deferred + data.cost)}</td></tr>
       </tfoot>
     </table>
   `;
@@ -189,6 +197,8 @@ function initDetailClicks() {
   });
 }
 
+let manualLinesById = {};
+
 function gp(l) {
   return Number(l.value || 0) - Number(l.cost || 0);
 }
@@ -197,8 +207,8 @@ async function loadManualEntries() {
   const res = await fetch('api/manual_billing_lines.php');
   const { lines } = await res.json();
 
-  const releasedTotal = lines.filter(l => gp(l) >= 0).reduce((sum, l) => sum + gp(l), 0);
-  const deferredTotal = lines.filter(l => gp(l) < 0).reduce((sum, l) => sum + gp(l), 0);
+  const releasedTotal = lines.filter(l => l.type === 'release').reduce((sum, l) => sum + gp(l), 0);
+  const deferredTotal = lines.filter(l => l.type === 'defer').reduce((sum, l) => sum + gp(l), 0);
   document.getElementById('releasedTotal').textContent = money(releasedTotal);
   document.getElementById('deferredTotal').textContent = money(deferredTotal);
 
@@ -221,31 +231,36 @@ function renderManualEntryGroups(lines) {
   }
 
   const months = Object.keys(byMonth).sort();
-  const currentMonth = new Date().toISOString().slice(0, 7);
   const formatter = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' });
 
   container.innerHTML = months.map(month => {
     const entries = byMonth[month];
-    const released = entries.filter(l => gp(l) >= 0).reduce((sum, l) => sum + gp(l), 0);
-    const deferred = entries.filter(l => gp(l) < 0).reduce((sum, l) => sum + gp(l), 0);
+    const released = entries.filter(l => l.type === 'release').reduce((sum, l) => sum + gp(l), 0);
+    const deferred = entries.filter(l => l.type === 'defer').reduce((sum, l) => sum + gp(l), 0);
+    const costTotal = entries.filter(l => l.type === 'cost').reduce((sum, l) => sum + gp(l), 0);
     const label = formatter.format(new Date(`${month}-01T00:00:00`));
+    const typeTag = { defer: '<span class="pct-chip red">Deferred</span>', cost: '<span class="pct-chip red">Cost</span>' };
     const rows = entries.map(l => {
-      const isDefer = gp(l) < 0;
+      manualLinesById[l.id] = l;
+      const isNegative = l.type === 'defer' || l.type === 'cost';
       return `
-      <tr>
-        <td>${escapeHtml(l.description)} ${isDefer ? '<span class="pct-chip red">Deferred</span>' : ''}</td>
+      <tr data-row-for="${l.id}">
+        <td>${escapeHtml(l.description)} ${typeTag[l.type] || ''}</td>
         <td>${l.billing_date}</td>
         <td>${money(l.value)}</td>
         <td>${money(l.cost)}</td>
-        <td class="${isDefer ? 'negative' : ''}">${money(gp(l))}</td>
-        <td><button type="button" class="manual-entry-delete" data-id="${l.id}">Delete</button></td>
+        <td class="${isNegative ? 'negative' : ''}">${money(gp(l))}</td>
+        <td>
+          <button type="button" class="manual-entry-edit" data-id="${l.id}">Edit</button>
+          <button type="button" class="manual-entry-delete" data-id="${l.id}">Delete</button>
+        </td>
       </tr>
     `;
     }).join('');
 
     return `
-      <details class="manual-month-details" ${month === currentMonth ? 'open' : ''}>
-        <summary>${label} <span class="forecast-toggle-hint">Released: ${money(released)} &middot; Deferred: ${money(deferred)} &middot; Net: ${money(released + deferred)}</span></summary>
+      <details class="manual-month-details">
+        <summary>${label} <span class="forecast-toggle-hint">Released: ${money(released)} &middot; Deferred: ${money(deferred)} &middot; Costs: ${money(costTotal)} &middot; Net: ${money(released + deferred + costTotal)}</span></summary>
         <table class="job-table">
           <thead><tr><th>Description</th><th>Date</th><th>Value</th><th>Cost</th><th>GP</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
@@ -262,14 +277,14 @@ function initManualEntryForm() {
     const description = document.getElementById('manualDescription').value.trim();
     const billingDate = document.getElementById('manualDate').value;
     const type = document.getElementById('manualType').value;
-    const rawValue = Number(document.getElementById('manualValue').value || 0);
+    const rawValue = type === 'cost' ? 0 : Number(document.getElementById('manualValue').value || 0);
     const value = type === 'defer' ? -Math.abs(rawValue) : Math.abs(rawValue);
     const cost = Number(document.getElementById('manualCost').value || 0);
 
     await fetch('api/manual_billing_lines.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description, billing_date: billingDate, value, cost }),
+      body: JSON.stringify({ description, billing_date: billingDate, value, cost, type }),
     });
 
     form.reset();
@@ -278,18 +293,75 @@ function initManualEntryForm() {
   });
 
   document.getElementById('manualEntryGroups').addEventListener('click', async (e) => {
-    const btn = e.target.closest('.manual-entry-delete');
-    if (!btn) return;
+    const deleteBtn = e.target.closest('.manual-entry-delete');
+    if (deleteBtn) {
+      await fetch('api/manual_billing_line_delete.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: Number(deleteBtn.dataset.id) }),
+      });
+      await loadManualEntries();
+      await loadCashflow();
+      return;
+    }
 
-    await fetch('api/manual_billing_line_delete.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: Number(btn.dataset.id) }),
-    });
+    const editBtn = e.target.closest('.manual-entry-edit');
+    if (editBtn) {
+      const row = editBtn.closest('tr');
+      const l = manualLinesById[Number(editBtn.dataset.id)];
+      if (row && l) row.outerHTML = renderEditRow(l);
+      return;
+    }
 
-    await loadManualEntries();
-    await loadCashflow();
+    const cancelBtn = e.target.closest('.manual-entry-cancel');
+    if (cancelBtn) {
+      renderManualEntryGroups(Object.values(manualLinesById));
+      return;
+    }
+
+    const saveBtn = e.target.closest('.manual-entry-save');
+    if (saveBtn) {
+      const row = saveBtn.closest('tr');
+      const id = Number(saveBtn.dataset.id);
+      const description = row.querySelector('.manual-edit-description').value.trim();
+      const billingDate = row.querySelector('.manual-edit-date').value;
+      const type = row.querySelector('.manual-edit-type').value;
+      const rawValue = type === 'cost' ? 0 : Number(row.querySelector('.manual-edit-value').value || 0);
+      const value = type === 'defer' ? -Math.abs(rawValue) : Math.abs(rawValue);
+      const cost = Number(row.querySelector('.manual-edit-cost').value || 0);
+
+      await fetch('api/manual_billing_line_update.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, description, billing_date: billingDate, value, cost, type }),
+      });
+
+      await loadManualEntries();
+      await loadCashflow();
+    }
   });
+}
+
+function renderEditRow(l) {
+  return `
+    <tr data-row-for="${l.id}">
+      <td><input type="text" class="manual-edit-description" value="${escapeHtml(l.description)}"></td>
+      <td><input type="date" class="manual-edit-date" value="${l.billing_date}"></td>
+      <td><input type="number" class="manual-edit-value" value="${Math.abs(Number(l.value))}" step="0.01" min="0"></td>
+      <td><input type="number" class="manual-edit-cost" value="${Number(l.cost)}" step="0.01" min="0"></td>
+      <td>
+        <select class="manual-edit-type">
+          <option value="release" ${l.type === 'release' ? 'selected' : ''}>Release</option>
+          <option value="defer" ${l.type === 'defer' ? 'selected' : ''}>Defer</option>
+          <option value="cost" ${l.type === 'cost' ? 'selected' : ''}>Cost only</option>
+        </select>
+      </td>
+      <td>
+        <button type="button" class="manual-entry-save" data-id="${l.id}">Save</button>
+        <button type="button" class="manual-entry-cancel" data-id="${l.id}">Cancel</button>
+      </td>
+    </tr>
+  `;
 }
 
 initDetailClicks();

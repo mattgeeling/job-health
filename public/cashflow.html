@@ -41,12 +41,13 @@
     <form id="manualEntryForm" class="manual-entry-form">
       <input type="text" id="manualDescription" placeholder="Description" required>
       <input type="date" id="manualDate" required>
-      <input type="number" id="manualValue" placeholder="Value (£)" step="0.01" min="0" required>
-      <input type="number" id="manualCost" placeholder="Cost (£, optional)" step="0.01" min="0">
       <select id="manualType">
         <option value="release">Release</option>
         <option value="defer">Defer</option>
+        <option value="cost">Cost only</option>
       </select>
+      <input type="number" id="manualValue" placeholder="Value (£)" step="0.01" min="0">
+      <input type="number" id="manualCost" placeholder="Cost (£)" step="0.01" min="0">
       <button type="submit" class="sync-btn">Add</button>
     </form>
     <p class="chart-note">Released total: <strong id="releasedTotal"></strong> &middot; Deferred total: <strong id="deferredTotal"></strong></p>

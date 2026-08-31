@@ -1456,3 +1456,11 @@ body {
   color: var(--ink);
   font-weight: 700;
 }
+
+.forecast-detail-table tr.cashflow-row-released td {
+  background: var(--green-bg);
+}
+
+.forecast-detail-table tr.cashflow-row-deferred td {
+  background: var(--red-bg);
+}

@@ -39,7 +39,7 @@ unset($row);
 // plan doesn't capture. Counted at full value, like live jobs.
 $manualLines = $pdo->query(
     'SELECT id AS job_number, description AS title, NULL AS client_name, NULL AS weighting,
-            billing_date, value AS planned_value, cost AS planned_cost
+            billing_date, value AS planned_value, cost AS planned_cost, type
      FROM manual_billing_lines'
 )->fetchAll();
 foreach ($manualLines as &$row) {
