@@ -67,3 +67,9 @@ CREATE TABLE IF NOT EXISTS pipeline_billing_lines (
   created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_job_number (job_number)
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS handler_notes (
+  handler_name      VARCHAR(255) NOT NULL PRIMARY KEY,
+  notes             TEXT NULL,
+  updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;

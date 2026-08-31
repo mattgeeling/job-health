@@ -216,12 +216,23 @@ body {
   color: var(--ink);
 }
 
+.profit-sub {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
 .profit-value.negative {
   color: var(--red);
 }
 
 .profit-tile-emphasis .profit-value.negative {
   color: #ffd9d4;
+}
+
+.profit-tile-emphasis .profit-sub {
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .profit-tile-emphasis.profit-tile-red {
@@ -796,6 +807,44 @@ body {
   flex-wrap: wrap;
 }
 
+.pipeline-circles-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  border: 2px solid #f2c400;
+  border-radius: 12px;
+  background: rgba(242, 196, 0, 0.12);
+}
+
+.pipeline-circles-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pipeline-grand-total {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pipeline-grand-total-label {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.pipeline-grand-total-amount {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #1f2430;
+  background: rgba(242, 196, 0, 0.4);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
 .pipeline-hero .delivery-stats {
   flex: 1;
   margin: 0;
@@ -815,6 +864,7 @@ body {
   justify-content: center;
   text-align: center;
   padding: 12px;
+  box-sizing: border-box;
 }
 
 .pipeline-value-circle-hold {
@@ -1123,6 +1173,23 @@ body {
   border-top: 2px solid var(--border);
 }
 
+.forecast-highlight-col {
+  border-top: 2px solid #f2c400;
+  border-bottom: 2px solid #f2c400;
+}
+
+.forecast-detail-table tfoot .forecast-highlight-col {
+  border-top: 2px solid #f2c400;
+}
+
+.forecast-highlight-start {
+  border-left: 2px solid #f2c400;
+}
+
+.forecast-highlight-end {
+  border-right: 2px solid #f2c400;
+}
+
 .notes-panel {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1164,6 +1231,11 @@ body {
   font-size: 12px;
   color: var(--ink);
   background: var(--bg);
+}
+
+.pipeline-notes-input-autogrow {
+  resize: none;
+  overflow: hidden;
 }
 
 .pipeline-notes-status {

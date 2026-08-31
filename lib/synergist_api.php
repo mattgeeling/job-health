@@ -257,3 +257,37 @@ function synergist_job_cost_transactions(string $job): array
 
     return $transactions;
 }
+
+/**
+ * Looks up a client's code (e.g. "1/HEAD01") from its display name, needed
+ * because invoiceslist filters by code rather than name. Returns null if no
+ * exact (case-insensitive) match is found.
+ */
+function synergist_client_code_for_name(string $clientName): ?string
+{
+    $body = synergist_get(null, ['action' => 'clients', 'rows' => 1000], 'jobs');
+    foreach ($body['data'] ?? [] as $client) {
+        if (strcasecmp($client['clientName'] ?? '', $clientName) === 0) {
+            return $client['clientCode'] ?? null;
+        }
+    }
+    return null;
+}
+
+/**
+ * Sums this client's net invoiced value (invoices minus credit notes) within
+ * the given date range. Financial-year scoping is the caller's job — this
+ * just totals whatever range it's given.
+ */
+function synergist_client_invoiced_total(string $clientCode, string $fromDate, string $toDate): float
+{
+    $body = synergist_get('invoiceslist', ['client' => $clientCode, 'rows' => 1000], 'invoices');
+    $total = 0.0;
+    foreach ($body['data'] ?? [] as $invoice) {
+        $date = $invoice['invoiceDate'] ?? null;
+        if ($date !== null && $date >= $fromDate && $date <= $toDate) {
+            $total += (float) ($invoice['invoiceTotalNet'] ?? 0);
+        }
+    }
+    return $total;
+}

@@ -153,6 +153,9 @@ function applyFilter() {
     ? searchFiltered.filter(o => o.status === 'on_hold')
     : searchFiltered.filter(o => o.status !== 'on_hold');
 
+  const grandTotal = searchFiltered.reduce((sum, o) => sum + Number(o.quoted_value || 0), 0);
+  document.getElementById('pipelineGrandTotal').textContent = money(grandTotal);
+
   const activeBucket = getActiveBucket();
   const activeNoValue = getActiveNoValue();
   let tableFiltered = openFiltered;
@@ -194,7 +197,8 @@ function renderForecast(rows) {
     }
   }
 
-  const months = Object.keys(byMonth).sort();
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const months = Object.keys(byMonth).filter(m => m >= currentMonth).sort();
   const el = document.getElementById('forecastChart');
   const detail = document.getElementById('forecastDetail');
   detail.innerHTML = '';
@@ -300,8 +304,8 @@ function showForecastDetail(month) {
       <tr>
         <td>${escapeHtml(c.job)} ${escapeHtml(c.title || '')}</td>
         <td>${c.weightingPct === null || c.weightingPct === undefined ? '—' : `${c.weightingPct}%`}</td>
-        <td>${money(c.weighted)}</td>
-        <td>${money(c.maxFee)}</td>
+        <td class="forecast-highlight-col forecast-highlight-start">${money(c.weighted)}</td>
+        <td class="forecast-highlight-col forecast-highlight-end">${money(c.maxFee)}</td>
         <td>${money(c.cost)}</td>
       </tr>
     `)
@@ -311,11 +315,23 @@ function showForecastDetail(month) {
     <h3 class="forecast-detail-title">${data.label}</h3>
     <table class="forecast-detail-table">
       <thead>
-        <tr><th>Opportunity</th><th>Weighted %</th><th>Weighted revenue</th><th>Maximum fee</th><th>Planned cost</th></tr>
+        <tr>
+          <th>Opportunity</th>
+          <th>Weighted %</th>
+          <th class="forecast-highlight-col forecast-highlight-start">Weighted revenue</th>
+          <th class="forecast-highlight-col forecast-highlight-end">Maximum fee</th>
+          <th>Planned cost</th>
+        </tr>
       </thead>
       <tbody>${rows}</tbody>
       <tfoot>
-        <tr><td>Total</td><td></td><td>${money(data.weighted)}</td><td>${money(data.maxFee)}</td><td>${money(data.cost)}</td></tr>
+        <tr>
+          <td>Total</td>
+          <td></td>
+          <td class="forecast-highlight-col forecast-highlight-start">${money(data.weighted)}</td>
+          <td class="forecast-highlight-col forecast-highlight-end">${money(data.maxFee)}</td>
+          <td>${money(data.cost)}</td>
+        </tr>
       </tfoot>
     </table>
   `;
@@ -424,7 +440,7 @@ function renderTable(rows) {
     const withClient = o.status === 'with_client';
     const rowClass = onHold ? 'pipeline-row-on-hold' : (noValue ? 'job-row-unquoted' : (withClient ? 'pipeline-row-with-client' : ''));
     html.push(`
-    <tr class="${rowClass}" data-row-for="${o.job_number}">
+    <tr class="job-row ${rowClass}" data-row-for="${o.job_number}" data-href="opportunity.html?job=${encodeURIComponent(o.job_number)}">
       <td><span class="risk-dot ${BUCKET_RISK_CLASS[o.bucket]}"></span></td>
       <td>
         <span class="job-number">${o.job_number}</span>
@@ -516,9 +532,19 @@ function initStatusSaving() {
   });
 }
 
+function initRowNavigation() {
+  const body = document.getElementById('pipelineTableBody');
+  body.addEventListener('click', (e) => {
+    if (e.target.closest('select, textarea, a')) return;
+    const row = e.target.closest('tr[data-href]');
+    if (row) location.href = row.dataset.href;
+  });
+}
+
 initSyncButton();
 initSearch();
 initNotesSaving();
 initStatusSaving();
 initForecastDetail();
+initRowNavigation();
 loadPipeline();

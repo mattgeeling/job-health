@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Health — Opportunity detail</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-brand">
+    <img src="fuzzy-duck-logo.png" alt="Fuzzy Duck" class="topbar-logo">
+    <div>
+      <a href="pipeline.html" class="back-link">&larr; Pipeline</a>
+      <div class="job-title-row">
+        <h1 id="opportunityTitle">Loading…</h1>
+        <span class="risk-badge" id="riskBadge"></span>
+      </div>
+      <p class="topbar-sub" id="opportunitySub"></p>
+    </div>
+  </div>
+</header>
+
+<main class="main job-detail-layout">
+  <div class="job-detail-primary">
+    <div class="profit-panel" id="statPanel"></div>
+
+    <section class="chart-section">
+      <h2>Billing plan</h2>
+      <p class="chart-note">Planned invoice lines for this opportunity, as set up in Synergist's billing plan.</p>
+      <table class="job-table" id="billingTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Planned value</th>
+            <th>Planned cost</th>
+          </tr>
+        </thead>
+        <tbody id="billingTableBody"></tbody>
+      </table>
+    </section>
+
+    <section class="chart-section">
+      <h2>Notes</h2>
+      <textarea class="pipeline-notes-input" id="opportunityNotes" rows="4" placeholder="Add a note…"></textarea>
+      <span class="pipeline-notes-status" id="opportunityNotesStatus"></span>
+    </section>
+  </div>
+</main>
+
+<script src="opportunity.js"></script>
+</body>
+</html>
