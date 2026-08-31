@@ -584,6 +584,11 @@ body {
   height: 12px;
 }
 
+.table-scroll {
+  margin-top: 16px;
+  overflow-x: auto;
+}
+
 .job-table {
   width: 100%;
   border-collapse: collapse;
@@ -812,6 +817,11 @@ body {
   padding: 12px;
 }
 
+.pipeline-value-circle-hold {
+  background: var(--red-bg);
+  color: #1f2430;
+}
+
 .pipeline-value-label {
   font-size: 11px;
   font-weight: 700;
@@ -946,11 +956,56 @@ body {
 .forecast-swatch-maxfee { background: rgba(242, 196, 0, 0.28); border: 1px solid #f2c400; }
 .forecast-swatch-cost { background: #b23b3b; }
 
+.forecast-chart-wrapper {
+  display: flex;
+  align-items: flex-start;
+}
+
+.forecast-axis {
+  position: relative;
+  width: 36px;
+  height: 160px;
+  flex-shrink: 0;
+  margin-top: 10px;
+}
+
+.forecast-axis-label {
+  position: absolute;
+  left: 0;
+  right: 6px;
+  transform: translateY(50%);
+  font-size: 10px;
+  color: var(--ink-soft);
+  text-align: right;
+  white-space: nowrap;
+}
+
 .forecast-scroll-wrap {
   position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.forecast-gridlines {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  right: 0;
+  height: 160px;
+  pointer-events: none;
+}
+
+.forecast-gridline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border);
 }
 
 .forecast-chart {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: flex-end;
   gap: 12px;

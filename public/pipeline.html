@@ -38,6 +38,11 @@
       <span class="pipeline-value-amount" id="pipelineTotalValue">£0</span>
       <span class="pipeline-value-count" id="pipelineTotalCount"></span>
     </div>
+    <div class="pipeline-value-circle pipeline-value-circle-hold">
+      <span class="pipeline-value-label">On hold value</span>
+      <span class="pipeline-value-amount" id="pipelineHoldValue">£0</span>
+      <span class="pipeline-value-count" id="pipelineHoldCount"></span>
+    </div>
     <div class="delivery-stats" id="pipelineStats"></div>
   </div>
   <p class="chart-note" id="pipelineClearFilter"></p>
@@ -49,22 +54,24 @@
     <div class="forecast-detail" id="forecastDetail"></div>
   </section>
 
-  <table class="job-table" id="pipelineTable">
-    <thead>
-      <tr>
-        <th></th>
-        <th>Job</th>
-        <th>Client</th>
-        <th>Handler</th>
-        <th>Type</th>
-        <th>Value</th>
-        <th>Status</th>
-        <th>Weighting</th>
-        <th>Notes</th>
-      </tr>
-    </thead>
-    <tbody id="pipelineTableBody"></tbody>
-  </table>
+  <div class="table-scroll">
+    <table class="job-table" id="pipelineTable">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Job</th>
+          <th>Client</th>
+          <th>Handler</th>
+          <th>Type</th>
+          <th>Value</th>
+          <th>Status</th>
+          <th>Weighting</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="pipelineTableBody"></tbody>
+    </table>
+  </div>
 </main>
 
 <script src="pipeline.js"></script>

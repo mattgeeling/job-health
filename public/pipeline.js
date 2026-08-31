@@ -139,7 +139,11 @@ function applyFilter() {
     );
   }
 
-  const onHoldCount = searchFiltered.filter(o => o.status === 'on_hold').length;
+  const onHoldJobs = searchFiltered.filter(o => o.status === 'on_hold');
+  const onHoldCount = onHoldJobs.length;
+  const onHoldValue = onHoldJobs.reduce((sum, o) => sum + Number(o.quoted_value || 0), 0);
+  document.getElementById('pipelineHoldValue').textContent = money(onHoldValue);
+  document.getElementById('pipelineHoldCount').textContent = `${onHoldCount} on hold`;
 
   // On hold opportunities are hidden from the default "open" view — the
   // On hold card is the only way to see them, so this count/tile logic
@@ -204,6 +208,15 @@ function renderForecast(rows) {
   const maxValue = Math.max(...months.map(m => Math.max(byMonth[m].weighted, byMonth[m].maxFee, byMonth[m].cost)));
   const formatter = new Intl.DateTimeFormat('en-GB', { month: 'short', year: '2-digit' });
 
+  // Gridlines every £5k, but back off to a coarser step if that would draw
+  // an unreasonable number of lines for months with much bigger values.
+  let step = 5000;
+  while (maxValue > 0 && Math.ceil(maxValue / step) > 10) step *= 2;
+  const axisMax = maxValue > 0 ? Math.ceil(maxValue / step) * step : step;
+  const ticks = [];
+  for (let v = 0; v <= axisMax; v += step) ticks.push(v);
+  const axisLabel = (v) => v >= 1000 ? `£${v / 1000}k` : `£${v}`;
+
   forecastMonths = {};
 
   el.innerHTML = `
@@ -212,28 +225,36 @@ function renderForecast(rows) {
       <span class="forecast-legend-item"><span class="forecast-swatch forecast-swatch-maxfee"></span>Maximum fee</span>
       <span class="forecast-legend-item"><span class="forecast-swatch forecast-swatch-cost"></span>Planned cost</span>
     </div>
-    <div class="forecast-scroll-wrap">
-      <div class="forecast-chart" id="forecastChartScroll">
-      ${months.map(m => {
-        const { weighted, maxFee, cost } = byMonth[m];
-        const label = formatter.format(new Date(`${m}-01T00:00:00`));
-        forecastMonths[m] = { label, weighted, maxFee, cost, contributors: contributorsByMonth[m] };
-        const heightPct = (v) => maxValue > 0 ? Math.max((v / maxValue) * 100, 3) : 3;
-        return `
-          <div class="forecast-bar-col" data-month="${m}" tabindex="0" role="button" aria-label="Show breakdown for ${label}">
-            <div class="forecast-bar-group">
-              <div class="forecast-bar forecast-bar-weighted" style="height:${heightPct(weighted)}%"></div>
-              <div class="forecast-bar forecast-bar-maxfee" style="height:${heightPct(maxFee)}%"></div>
-              <div class="forecast-bar forecast-bar-cost" style="height:${heightPct(cost)}%"></div>
-            </div>
-            <span class="forecast-bar-label">${label}</span>
-            <span class="forecast-bar-value forecast-bar-value-weighted">Weighted: ${money(weighted)}</span>
-            <span class="forecast-bar-value forecast-bar-value-maxfee">Maximum: ${money(maxFee)}</span>
-          </div>
-        `;
-      }).join('')}
+    <div class="forecast-chart-wrapper">
+      <div class="forecast-axis">
+        ${ticks.map(v => `<span class="forecast-axis-label" style="bottom:${(v / axisMax) * 100}%">${axisLabel(v)}</span>`).join('')}
       </div>
-      <div class="forecast-scroll-hint" id="forecastScrollHint">&rsaquo;</div>
+      <div class="forecast-scroll-wrap">
+        <div class="forecast-gridlines">
+          ${ticks.map(v => `<div class="forecast-gridline" style="bottom:${(v / axisMax) * 100}%"></div>`).join('')}
+        </div>
+        <div class="forecast-chart" id="forecastChartScroll">
+        ${months.map(m => {
+          const { weighted, maxFee, cost } = byMonth[m];
+          const label = formatter.format(new Date(`${m}-01T00:00:00`));
+          forecastMonths[m] = { label, weighted, maxFee, cost, contributors: contributorsByMonth[m] };
+          const heightPct = (v) => axisMax > 0 ? Math.max((v / axisMax) * 100, 3) : 3;
+          return `
+            <div class="forecast-bar-col" data-month="${m}" tabindex="0" role="button" aria-label="Show breakdown for ${label}">
+              <div class="forecast-bar-group">
+                <div class="forecast-bar forecast-bar-weighted" style="height:${heightPct(weighted)}%"></div>
+                <div class="forecast-bar forecast-bar-maxfee" style="height:${heightPct(maxFee)}%"></div>
+                <div class="forecast-bar forecast-bar-cost" style="height:${heightPct(cost)}%"></div>
+              </div>
+              <span class="forecast-bar-label">${label}</span>
+              <span class="forecast-bar-value forecast-bar-value-weighted">Weighted: ${money(weighted)}</span>
+              <span class="forecast-bar-value forecast-bar-value-maxfee">Maximum: ${money(maxFee)}</span>
+            </div>
+          `;
+        }).join('')}
+        </div>
+        <div class="forecast-scroll-hint" id="forecastScrollHint">&rsaquo;</div>
+      </div>
     </div>
   `;
 
