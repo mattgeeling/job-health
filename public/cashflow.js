@@ -39,11 +39,10 @@ function renderChart(lines) {
     // matters here (matches how this is tracked on the studio's own
     // spreadsheet), not raw billed value.
     const gp = (Number(line.planned_value || 0) - Number(line.planned_cost || 0)) * confidence;
-    const bucket = line.source === 'manual'
-      ? (line.type === 'defer' ? 'deferred' : (line.type === 'cost' ? 'cost' : 'released'))
-      : line.source;
+    const manualBucket = { release: 'released', defer: 'deferred', cost: 'cost', invoice: 'invoiced' };
+    const bucket = line.source === 'manual' ? (manualBucket[line.type] || 'released') : line.source;
 
-    if (!byMonth[month]) byMonth[month] = { live: 0, pipeline: 0, released: 0, deferred: 0, cost: 0 };
+    if (!byMonth[month]) byMonth[month] = { live: 0, pipeline: 0, released: 0, deferred: 0, cost: 0, invoiced: 0 };
     byMonth[month][bucket] += gp;
 
     if (!contributorsByMonth[month]) contributorsByMonth[month] = [];
@@ -68,6 +67,7 @@ function renderChart(lines) {
     <span class="forecast-legend-item"><span class="forecast-swatch" style="background:#2f7a4f"></span>Live jobs (committed)</span>
     <span class="forecast-legend-item"><span class="forecast-swatch" style="background:rgba(242,196,0,0.6)"></span>Pipeline (weighted)</span>
     <span class="forecast-legend-item"><span class="forecast-swatch" style="background:#3f6fa8"></span>Released (manual)</span>
+    <span class="forecast-legend-item"><span class="forecast-swatch" style="background:#7a4fa8"></span>Invoiced (manual)</span>
   `;
 
   if (months.length === 0) {
@@ -77,7 +77,7 @@ function renderChart(lines) {
     return;
   }
 
-  const maxValue = Math.max(...months.map(m => Math.max(byMonth[m].live, byMonth[m].pipeline, byMonth[m].released)));
+  const maxValue = Math.max(...months.map(m => Math.max(byMonth[m].live, byMonth[m].pipeline, byMonth[m].released, byMonth[m].invoiced)));
   let step = 5000;
   while (maxValue > 0 && Math.ceil(maxValue / step) > 10) step *= 2;
   const axisMax = maxValue > 0 ? Math.ceil(maxValue / step) * step : step;
@@ -92,10 +92,10 @@ function renderChart(lines) {
   cashflowMonths = {};
 
   chartEl.innerHTML = months.map(m => {
-    const { live, pipeline, released, deferred, cost } = byMonth[m];
+    const { live, pipeline, released, deferred, cost, invoiced } = byMonth[m];
     const label = formatter.format(new Date(`${m}-01T00:00:00`));
-    const total = live + pipeline + released + deferred + cost;
-    cashflowMonths[m] = { label, live, pipeline, released, deferred, cost, contributors: contributorsByMonth[m] };
+    const total = live + pipeline + released + deferred + cost + invoiced;
+    cashflowMonths[m] = { label, live, pipeline, released, deferred, cost, invoiced, contributors: contributorsByMonth[m] };
     const heightPct = (v) => v <= 0 ? 0 : (axisMax > 0 ? Math.max((v / axisMax) * 100, 3) : 3);
     return `
       <div class="forecast-bar-col" data-month="${m}" tabindex="0" role="button" aria-label="Show breakdown for ${label}">
@@ -103,11 +103,13 @@ function renderChart(lines) {
           <div class="forecast-bar" style="height:${heightPct(live)}%; background:#2f7a4f;"></div>
           <div class="forecast-bar" style="height:${heightPct(pipeline)}%; background:rgba(242,196,0,0.6);"></div>
           <div class="forecast-bar" style="height:${heightPct(released)}%; background:#3f6fa8;"></div>
+          <div class="forecast-bar" style="height:${heightPct(invoiced)}%; background:#7a4fa8;"></div>
         </div>
         <span class="forecast-bar-label">${label}</span>
         <span class="forecast-bar-value" style="color:#2f7a4f;">Live: ${money(live)}</span>
         <span class="forecast-bar-value" style="color:#8a6d00;">Pipeline: ${money(pipeline)}</span>
         <span class="forecast-bar-value" style="color:#3f6fa8;">Released: ${money(released)}</span>
+        <span class="forecast-bar-value" style="color:#7a4fa8;">Invoiced: ${money(invoiced)}</span>
         <span class="forecast-bar-value negative">Costs: ${money(cost)}</span>
         <span class="cashflow-total-divider"></span>
         <span class="forecast-bar-value cashflow-total-value">Total: ${money(total)}</span>
@@ -158,13 +160,22 @@ function showDetail(month) {
     released: '<span class="pct-chip green">Released</span>',
     deferred: '<span class="pct-chip red">Deferred</span>',
     cost: '<span class="pct-chip red">Cost</span>',
+    invoiced: '<span class="pct-chip green">Invoiced</span>',
   };
-  const isManualSource = (s) => s === 'released' || s === 'deferred' || s === 'cost';
-  const rowClass = { released: 'cashflow-row-released', deferred: 'cashflow-row-deferred', cost: 'cashflow-row-deferred' };
-  const rows = data.contributors
+  const isManualSource = (s) => s === 'released' || s === 'deferred' || s === 'cost' || s === 'invoiced';
+  const rowClass = { released: 'cashflow-row-released', deferred: 'cashflow-row-deferred', cost: 'cashflow-row-deferred', invoiced: 'cashflow-row-released' };
+  const labelFor = (c) => (isManualSource(c.source) ? c.title : `${c.job} ${c.title}`) || '';
+  const bottomSources = ['cost', 'released'];
+  const sortedContributors = [...data.contributors].sort((a, b) => {
+    const aBottom = bottomSources.includes(a.source) ? 1 : 0;
+    const bBottom = bottomSources.includes(b.source) ? 1 : 0;
+    if (aBottom !== bBottom) return aBottom - bBottom;
+    return labelFor(a).localeCompare(labelFor(b));
+  });
+  const rows = sortedContributors
     .map(c => `
       <tr class="${rowClass[c.source] || ''}">
-        <td>${isManualSource(c.source) ? escapeHtml(c.title || '') : `${escapeHtml(c.job)} ${escapeHtml(c.title || '')}`}</td>
+        <td>${escapeHtml(labelFor(c))}</td>
         <td>${sourcePill[c.source] || c.source}</td>
         <td>${money(c.value)}</td>
       </tr>
@@ -177,7 +188,7 @@ function showDetail(month) {
       <thead><tr><th>Job</th><th>Source</th><th>GP</th></tr></thead>
       <tbody>${rows}</tbody>
       <tfoot>
-        <tr><td>Total</td><td></td><td>${money(data.live + data.pipeline + data.released + data.deferred + data.cost)}</td></tr>
+        <tr><td>Total</td><td></td><td>${money(data.live + data.pipeline + data.released + data.deferred + data.cost + data.invoiced)}</td></tr>
       </tfoot>
     </table>
   `;
@@ -213,8 +224,10 @@ async function loadManualEntries() {
 
   const releasedTotal = lines.filter(l => l.type === 'release').reduce((sum, l) => sum + gp(l), 0);
   const deferredTotal = lines.filter(l => l.type === 'defer').reduce((sum, l) => sum + gp(l), 0);
+  const invoicedTotal = lines.filter(l => l.type === 'invoice').reduce((sum, l) => sum + gp(l), 0);
   document.getElementById('releasedTotal').textContent = money(releasedTotal);
   document.getElementById('deferredTotal').textContent = money(deferredTotal);
+  document.getElementById('invoicedTotal').textContent = money(invoicedTotal);
 
   renderManualEntryGroups(lines);
 }
@@ -242,8 +255,13 @@ function renderManualEntryGroups(lines) {
     const released = entries.filter(l => l.type === 'release').reduce((sum, l) => sum + gp(l), 0);
     const deferred = entries.filter(l => l.type === 'defer').reduce((sum, l) => sum + gp(l), 0);
     const costTotal = entries.filter(l => l.type === 'cost').reduce((sum, l) => sum + gp(l), 0);
+    const invoicedTotal = entries.filter(l => l.type === 'invoice').reduce((sum, l) => sum + gp(l), 0);
     const label = formatter.format(new Date(`${month}-01T00:00:00`));
-    const typeTag = { defer: '<span class="pct-chip red">Deferred</span>', cost: '<span class="pct-chip red">Cost</span>' };
+    const typeTag = {
+      defer: '<span class="pct-chip red">Deferred</span>',
+      cost: '<span class="pct-chip red">Cost</span>',
+      invoice: '<span class="pct-chip green">Invoiced</span>',
+    };
     const rows = entries.map(l => {
       manualLinesById[l.id] = l;
       const isNegative = l.type === 'defer' || l.type === 'cost';
@@ -264,7 +282,7 @@ function renderManualEntryGroups(lines) {
 
     return `
       <details class="manual-month-details">
-        <summary>${label} <span class="forecast-toggle-hint">Released: ${money(released)} &middot; Deferred: ${money(deferred)} &middot; Costs: ${money(costTotal)} &middot; Net: ${money(released + deferred + costTotal)}</span></summary>
+        <summary>${label} <span class="forecast-toggle-hint">Released: ${money(released)} &middot; Deferred: ${money(deferred)} &middot; Costs: ${money(costTotal)} &middot; Invoiced: ${money(invoicedTotal)} &middot; Net: ${money(released + deferred + costTotal + invoicedTotal)}</span></summary>
         <table class="job-table">
           <thead><tr><th>Description</th><th>Date</th><th>Value</th><th>Cost</th><th>GP</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
@@ -358,6 +376,7 @@ function renderEditRow(l) {
           <option value="release" ${l.type === 'release' ? 'selected' : ''}>Release</option>
           <option value="defer" ${l.type === 'defer' ? 'selected' : ''}>Defer</option>
           <option value="cost" ${l.type === 'cost' ? 'selected' : ''}>Cost only</option>
+          <option value="invoice" ${l.type === 'invoice' ? 'selected' : ''}>Invoice amount</option>
         </select>
       </td>
       <td>

@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $billingDate = $input['billing_date'] ?? '';
     $value = (float) ($input['value'] ?? 0);
     $cost = (float) ($input['cost'] ?? 0);
-    $type = in_array($input['type'] ?? '', ['release', 'defer', 'cost'], true) ? $input['type'] : 'release';
+    $type = in_array($input['type'] ?? '', ['release', 'defer', 'cost', 'invoice'], true) ? $input['type'] : 'release';
 
     if ($description === '' || $billingDate === '') {
         http_response_code(400);

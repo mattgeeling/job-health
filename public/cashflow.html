@@ -56,12 +56,13 @@
         <option value="release">Release</option>
         <option value="defer">Defer</option>
         <option value="cost">Cost only</option>
+        <option value="invoice">Invoice amount</option>
       </select>
       <input type="number" id="manualValue" placeholder="Value (£)" step="0.01" min="0">
       <input type="number" id="manualCost" placeholder="Cost (£)" step="0.01" min="0">
       <button type="submit" class="sync-btn">Add</button>
     </form>
-    <p class="chart-note">Released total: <strong id="releasedTotal"></strong> &middot; Deferred total: <strong id="deferredTotal"></strong></p>
+    <p class="chart-note">Released total: <strong id="releasedTotal"></strong> &middot; Deferred total: <strong id="deferredTotal"></strong> &middot; Invoiced total: <strong id="invoicedTotal"></strong></p>
     <div id="manualEntryGroups"></div>
   </section>
 </main>

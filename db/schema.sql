@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS manual_billing_lines (
   billing_date      DATE NOT NULL,
   value             DECIMAL(12,2) NOT NULL DEFAULT 0,
   cost              DECIMAL(12,2) NOT NULL DEFAULT 0,
-  type              ENUM('release', 'defer', 'cost') NOT NULL DEFAULT 'release',
+  type              ENUM('release', 'defer', 'cost', 'invoice') NOT NULL DEFAULT 'release',
   created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
