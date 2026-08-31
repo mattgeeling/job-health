@@ -37,13 +37,21 @@
 
   <section class="chart-section">
     <h2>Manual entries</h2>
-    <p class="chart-note">For income released/recognised in a month other than when it was originally billed, or anything else not captured by Synergist's billing plan. The date here is when it should count towards the forecast above.</p>
+    <p class="chart-note">For income released/recognised in a month other than when it was originally billed, deferring income out of a month, or anything else not captured by Synergist's billing plan. The date here is when it should count towards the forecast above.</p>
     <form id="manualEntryForm" class="manual-entry-form">
       <input type="text" id="manualDescription" placeholder="Description" required>
       <input type="date" id="manualDate" required>
-      <input type="number" id="manualValue" placeholder="Value (£)" step="0.01" required>
+      <input type="number" id="manualValue" placeholder="Value (£)" step="0.01" min="0" required>
+      <select id="manualType">
+        <option value="release">Release</option>
+        <option value="defer">Defer</option>
+      </select>
       <button type="submit" class="sync-btn">Add</button>
     </form>
+    <div class="manual-entry-tabs" id="manualEntryTabs">
+      <button type="button" class="manual-entry-tab manual-entry-tab-active" data-type="release">Released <span id="releasedTotal"></span></button>
+      <button type="button" class="manual-entry-tab" data-type="defer">Deferred <span id="deferredTotal"></span></button>
+    </div>
     <div id="manualEntryGroups"></div>
   </section>
 </main>

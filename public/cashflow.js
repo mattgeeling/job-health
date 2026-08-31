@@ -2,7 +2,9 @@ let cashflowMonths = {};
 
 function money(v) {
   if (v === null || v === undefined) return '—';
-  return '£' + Number(v).toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const n = Number(v);
+  const sign = n < 0 ? '-' : '';
+  return sign + '£' + Math.abs(n).toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 function escapeHtml(str) {
@@ -82,8 +84,9 @@ function renderChart(lines) {
   chartEl.innerHTML = months.map(m => {
     const { live, pipeline, manual } = byMonth[m];
     const label = formatter.format(new Date(`${m}-01T00:00:00`));
+    const total = live + pipeline + manual;
     cashflowMonths[m] = { label, live, pipeline, manual, contributors: contributorsByMonth[m] };
-    const heightPct = (v) => axisMax > 0 ? Math.max((v / axisMax) * 100, 3) : 3;
+    const heightPct = (v) => v <= 0 ? 0 : (axisMax > 0 ? Math.max((v / axisMax) * 100, 3) : 3);
     return `
       <div class="forecast-bar-col" data-month="${m}" tabindex="0" role="button" aria-label="Show breakdown for ${label}">
         <div class="forecast-bar-group">
@@ -94,7 +97,9 @@ function renderChart(lines) {
         <span class="forecast-bar-label">${label}</span>
         <span class="forecast-bar-value" style="color:#2f7a4f;">Live: ${money(live)}</span>
         <span class="forecast-bar-value" style="color:#8a6d00;">Pipeline: ${money(pipeline)}</span>
-        ${manual > 0 ? `<span class="forecast-bar-value" style="color:#3f6fa8;">Manual: ${money(manual)}</span>` : ''}
+        ${manual !== 0 ? `<span class="forecast-bar-value" style="color:#3f6fa8;">Manual: ${money(manual)}</span>` : ''}
+        <span class="cashflow-total-divider"></span>
+        <span class="forecast-bar-value cashflow-total-value">Total: ${money(total)}</span>
       </div>
     `;
   }).join('');
@@ -177,13 +182,32 @@ function initDetailClicks() {
   });
 }
 
+let allManualLines = [];
+let activeManualTab = 'release';
+
 async function loadManualEntries() {
   const res = await fetch('api/manual_billing_lines.php');
   const { lines } = await res.json();
+  allManualLines = lines;
+
+  const released = lines.filter(l => Number(l.value) >= 0);
+  const deferred = lines.filter(l => Number(l.value) < 0);
+  document.getElementById('releasedTotal').textContent =
+    `(${money(released.reduce((sum, l) => sum + Number(l.value), 0))})`;
+  document.getElementById('deferredTotal').textContent =
+    `(${money(deferred.reduce((sum, l) => sum + Number(l.value), 0))})`;
+
+  renderManualEntryGroups();
+}
+
+function renderManualEntryGroups() {
   const container = document.getElementById('manualEntryGroups');
+  const lines = allManualLines.filter(l =>
+    activeManualTab === 'defer' ? Number(l.value) < 0 : Number(l.value) >= 0
+  );
 
   if (lines.length === 0) {
-    container.innerHTML = '<p class="chart-note">No manual entries yet.</p>';
+    container.innerHTML = `<p class="chart-note">No ${activeManualTab === 'defer' ? 'deferred' : 'released'} entries yet.</p>`;
     return;
   }
 
@@ -206,7 +230,7 @@ async function loadManualEntries() {
       <tr>
         <td>${escapeHtml(l.description)}</td>
         <td>${l.billing_date}</td>
-        <td>${money(l.value)}</td>
+        <td class="${activeManualTab === 'defer' ? 'negative' : ''}">${money(l.value)}</td>
         <td><button type="button" class="manual-entry-delete" data-id="${l.id}">Delete</button></td>
       </tr>
     `).join('');
@@ -223,13 +247,27 @@ async function loadManualEntries() {
   }).join('');
 }
 
+function initManualEntryTabs() {
+  document.getElementById('manualEntryTabs').addEventListener('click', (e) => {
+    const btn = e.target.closest('.manual-entry-tab');
+    if (!btn) return;
+    activeManualTab = btn.dataset.type;
+    document.querySelectorAll('.manual-entry-tab').forEach(t =>
+      t.classList.toggle('manual-entry-tab-active', t === btn)
+    );
+    renderManualEntryGroups();
+  });
+}
+
 function initManualEntryForm() {
   const form = document.getElementById('manualEntryForm');
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const description = document.getElementById('manualDescription').value.trim();
     const billingDate = document.getElementById('manualDate').value;
-    const value = document.getElementById('manualValue').value;
+    const type = document.getElementById('manualType').value;
+    const rawValue = Number(document.getElementById('manualValue').value || 0);
+    const value = type === 'defer' ? -Math.abs(rawValue) : Math.abs(rawValue);
 
     await fetch('api/manual_billing_lines.php', {
       method: 'POST',
@@ -259,5 +297,6 @@ function initManualEntryForm() {
 
 initDetailClicks();
 initManualEntryForm();
+initManualEntryTabs();
 loadCashflow();
 loadManualEntries();
