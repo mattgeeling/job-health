@@ -1464,3 +1464,38 @@ body {
 .forecast-detail-table tr.cashflow-row-deferred td {
   background: var(--red-bg);
 }
+
+.cashflow-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cashflow-chart-header h2 {
+  margin: 0;
+}
+
+.cashflow-range-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.cashflow-range-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cashflow-range-btn-active {
+  border-color: #f2c400;
+  background: #fdf6dc;
+  color: #1f2430;
+}

@@ -1,4 +1,6 @@
 let cashflowMonths = {};
+let cashflowLines = [];
+let cashflowRange = '3';
 
 function money(v) {
   if (v === null || v === undefined) return '—';
@@ -16,7 +18,8 @@ function escapeHtml(str) {
 async function loadCashflow() {
   const res = await fetch('api/cashflow.php');
   const { lines } = await res.json();
-  renderChart(lines);
+  cashflowLines = lines;
+  renderChart(cashflowLines);
 }
 
 function renderChart(lines) {
@@ -52,7 +55,8 @@ function renderChart(lines) {
     });
   }
 
-  const months = Object.keys(byMonth).sort();
+  const allMonths = Object.keys(byMonth).sort();
+  const months = cashflowRange === 'all' ? allMonths : allMonths.slice(0, Number(cashflowRange));
   const legendEl = document.getElementById('cashflowLegend');
   const axisEl = document.getElementById('cashflowAxis');
   const gridEl = document.getElementById('cashflowGridlines');
@@ -364,7 +368,20 @@ function renderEditRow(l) {
   `;
 }
 
+function initRangeToggle() {
+  document.getElementById('cashflowRangeToggle').addEventListener('click', (e) => {
+    const btn = e.target.closest('.cashflow-range-btn');
+    if (!btn) return;
+    cashflowRange = btn.dataset.range;
+    document.querySelectorAll('.cashflow-range-btn').forEach(b =>
+      b.classList.toggle('cashflow-range-btn-active', b === btn)
+    );
+    renderChart(cashflowLines);
+  });
+}
+
 initDetailClicks();
 initManualEntryForm();
+initRangeToggle();
 loadCashflow();
 loadManualEntries();
