@@ -973,13 +973,15 @@ body {
   font-weight: 700;
   color: #1f2430;
   background: linear-gradient(to right, transparent, var(--surface) 70%);
-  pointer-events: none;
+  cursor: pointer;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s ease;
 }
 
 .forecast-scroll-hint-visible {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .forecast-bar-col {

@@ -253,6 +253,10 @@ function initForecastScrollHint() {
 
   scroller.addEventListener('scroll', update);
   window.addEventListener('resize', update);
+  hint.addEventListener('click', (e) => {
+    e.stopPropagation();
+    scroller.scrollBy({ left: 160, behavior: 'smooth' });
+  });
   update();
 }
 
