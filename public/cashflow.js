@@ -32,20 +32,23 @@ function renderChart(lines) {
     const confidence = line.source === 'pipeline'
       ? (line.weighting === null ? 0.5 : Number(line.weighting) / 100)
       : 1;
-    const value = Number(line.planned_value || 0) * confidence;
+    // Gross profit — revenue minus cost — is the figure that actually
+    // matters here (matches how this is tracked on the studio's own
+    // spreadsheet), not raw billed value.
+    const gp = (Number(line.planned_value || 0) - Number(line.planned_cost || 0)) * confidence;
     const bucket = line.source === 'manual'
-      ? (value < 0 ? 'deferred' : 'released')
+      ? (gp < 0 ? 'deferred' : 'released')
       : line.source;
 
     if (!byMonth[month]) byMonth[month] = { live: 0, pipeline: 0, released: 0, deferred: 0 };
-    byMonth[month][bucket] += value;
+    byMonth[month][bucket] += gp;
 
     if (!contributorsByMonth[month]) contributorsByMonth[month] = [];
     contributorsByMonth[month].push({
       job: line.job_number,
       title: line.title,
       source: bucket,
-      value,
+      value: gp,
     });
   }
 
@@ -100,7 +103,7 @@ function renderChart(lines) {
         <span class="forecast-bar-label">${label}</span>
         <span class="forecast-bar-value" style="color:#2f7a4f;">Live: ${money(live)}</span>
         <span class="forecast-bar-value" style="color:#8a6d00;">Pipeline: ${money(pipeline)}</span>
-        ${released !== 0 ? `<span class="forecast-bar-value" style="color:#3f6fa8;">Released: ${money(released)}</span>` : ''}
+        <span class="forecast-bar-value" style="color:#3f6fa8;">Released: ${money(released)}</span>
         <span class="cashflow-total-divider"></span>
         <span class="forecast-bar-value cashflow-total-value">Total: ${money(total)}</span>
       </div>
@@ -159,7 +162,7 @@ function showDetail(month) {
   detailEl.innerHTML = `
     <h3 class="forecast-detail-title">${data.label}</h3>
     <table class="forecast-detail-table">
-      <thead><tr><th>Job</th><th>Source</th><th>Value</th></tr></thead>
+      <thead><tr><th>Job</th><th>Source</th><th>GP</th></tr></thead>
       <tbody>${rows}</tbody>
       <tfoot>
         <tr><td>Total</td><td></td><td>${money(data.live + data.pipeline + data.released + data.deferred)}</td></tr>
@@ -186,68 +189,27 @@ function initDetailClicks() {
   });
 }
 
-let allManualLines = [];
-let activeManualTab = 'release';
+function gp(l) {
+  return Number(l.value || 0) - Number(l.cost || 0);
+}
 
 async function loadManualEntries() {
   const res = await fetch('api/manual_billing_lines.php');
   const { lines } = await res.json();
-  allManualLines = lines;
 
-  const released = lines.filter(l => Number(l.value) >= 0);
-  const deferred = lines.filter(l => Number(l.value) < 0);
-  document.getElementById('releasedTotal').textContent =
-    `(${money(released.reduce((sum, l) => sum + Number(l.value), 0))})`;
-  document.getElementById('deferredTotal').textContent =
-    `(${money(deferred.reduce((sum, l) => sum + Number(l.value), 0))})`;
+  const releasedTotal = lines.filter(l => gp(l) >= 0).reduce((sum, l) => sum + gp(l), 0);
+  const deferredTotal = lines.filter(l => gp(l) < 0).reduce((sum, l) => sum + gp(l), 0);
+  document.getElementById('releasedTotal').textContent = money(releasedTotal);
+  document.getElementById('deferredTotal').textContent = money(deferredTotal);
 
-  renderMonthSummary(lines);
-  renderManualEntryGroups();
+  renderManualEntryGroups(lines);
 }
 
-function renderMonthSummary(lines) {
-  const body = document.getElementById('manualMonthSummaryBody');
-  if (lines.length === 0) {
-    body.innerHTML = '<tr><td colspan="4" class="chart-note">No manual entries yet.</td></tr>';
-    return;
-  }
-
-  const byMonth = {};
-  for (const l of lines) {
-    const month = l.billing_date.slice(0, 7);
-    if (!byMonth[month]) byMonth[month] = { released: 0, deferred: 0 };
-    if (Number(l.value) < 0) {
-      byMonth[month].deferred += Number(l.value);
-    } else {
-      byMonth[month].released += Number(l.value);
-    }
-  }
-
-  const months = Object.keys(byMonth).sort();
-  const formatter = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' });
-
-  body.innerHTML = months.map(month => {
-    const { released, deferred } = byMonth[month];
-    const label = formatter.format(new Date(`${month}-01T00:00:00`));
-    return `
-      <tr>
-        <td>${label}</td>
-        <td>${money(released)}</td>
-        <td class="${deferred < 0 ? 'negative' : ''}">${money(deferred)}</td>
-        <td>${money(released + deferred)}</td>
-      </tr>
-    `;
-  }).join('');
-}
-
-function renderManualEntryGroups() {
+function renderManualEntryGroups(lines) {
   const container = document.getElementById('manualEntryGroups');
-  const lines = allManualLines.filter(l =>
-    activeManualTab === 'defer' ? Number(l.value) < 0 : Number(l.value) >= 0
-  );
 
   if (lines.length === 0) {
-    container.innerHTML = `<p class="chart-note">No ${activeManualTab === 'defer' ? 'deferred' : 'released'} entries yet.</p>`;
+    container.innerHTML = '<p class="chart-note">No manual entries yet.</p>';
     return;
   }
 
@@ -264,39 +226,33 @@ function renderManualEntryGroups() {
 
   container.innerHTML = months.map(month => {
     const entries = byMonth[month];
-    const total = entries.reduce((sum, l) => sum + Number(l.value || 0), 0);
+    const released = entries.filter(l => gp(l) >= 0).reduce((sum, l) => sum + gp(l), 0);
+    const deferred = entries.filter(l => gp(l) < 0).reduce((sum, l) => sum + gp(l), 0);
     const label = formatter.format(new Date(`${month}-01T00:00:00`));
-    const rows = entries.map(l => `
+    const rows = entries.map(l => {
+      const isDefer = gp(l) < 0;
+      return `
       <tr>
-        <td>${escapeHtml(l.description)}</td>
+        <td>${escapeHtml(l.description)} ${isDefer ? '<span class="pct-chip red">Deferred</span>' : ''}</td>
         <td>${l.billing_date}</td>
-        <td class="${activeManualTab === 'defer' ? 'negative' : ''}">${money(l.value)}</td>
+        <td>${money(l.value)}</td>
+        <td>${money(l.cost)}</td>
+        <td class="${isDefer ? 'negative' : ''}">${money(gp(l))}</td>
         <td><button type="button" class="manual-entry-delete" data-id="${l.id}">Delete</button></td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
 
     return `
       <details class="manual-month-details" ${month === currentMonth ? 'open' : ''}>
-        <summary>${label} <span class="forecast-toggle-hint">${entries.length} entr${entries.length === 1 ? 'y' : 'ies'}, ${money(total)}</span></summary>
+        <summary>${label} <span class="forecast-toggle-hint">Released: ${money(released)} &middot; Deferred: ${money(deferred)} &middot; Net: ${money(released + deferred)}</span></summary>
         <table class="job-table">
-          <thead><tr><th>Description</th><th>Date</th><th>Value</th><th></th></tr></thead>
+          <thead><tr><th>Description</th><th>Date</th><th>Value</th><th>Cost</th><th>GP</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </details>
     `;
   }).join('');
-}
-
-function initManualEntryTabs() {
-  document.getElementById('manualEntryTabs').addEventListener('click', (e) => {
-    const btn = e.target.closest('.manual-entry-tab');
-    if (!btn) return;
-    activeManualTab = btn.dataset.type;
-    document.querySelectorAll('.manual-entry-tab').forEach(t =>
-      t.classList.toggle('manual-entry-tab-active', t === btn)
-    );
-    renderManualEntryGroups();
-  });
 }
 
 function initManualEntryForm() {
@@ -308,11 +264,12 @@ function initManualEntryForm() {
     const type = document.getElementById('manualType').value;
     const rawValue = Number(document.getElementById('manualValue').value || 0);
     const value = type === 'defer' ? -Math.abs(rawValue) : Math.abs(rawValue);
+    const cost = Number(document.getElementById('manualCost').value || 0);
 
     await fetch('api/manual_billing_lines.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description, billing_date: billingDate, value }),
+      body: JSON.stringify({ description, billing_date: billingDate, value, cost }),
     });
 
     form.reset();
@@ -337,6 +294,5 @@ function initManualEntryForm() {
 
 initDetailClicks();
 initManualEntryForm();
-initManualEntryTabs();
 loadCashflow();
 loadManualEntries();

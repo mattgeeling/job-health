@@ -1444,29 +1444,6 @@ body {
   margin-top: 10px;
 }
 
-.manual-entry-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.manual-entry-tab {
-  padding: 8px 14px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--ink-soft);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.manual-entry-tab-active {
-  border-color: #f2c400;
-  background: #fdf6dc;
-  color: #1f2430;
-}
 
 .cashflow-total-divider {
   display: block;

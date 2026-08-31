@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS manual_billing_lines (
   description       VARCHAR(255) NOT NULL,
   billing_date      DATE NOT NULL,
   value             DECIMAL(12,2) NOT NULL DEFAULT 0,
+  cost              DECIMAL(12,2) NOT NULL DEFAULT 0,
   created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 

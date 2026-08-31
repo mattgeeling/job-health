@@ -13,16 +13,16 @@
     <div>
       <a href="index.html" class="back-link">&larr; Home</a>
       <h1>Cash flow</h1>
-      <p class="topbar-sub">Combined billing forecast — live jobs (committed) plus pipeline opportunities (weighted)</p>
+      <p class="topbar-sub">Combined gross profit forecast — live jobs (committed) plus pipeline opportunities (weighted)</p>
     </div>
   </div>
 </header>
 
 <main class="main">
-  <p class="chart-note">Live jobs are already won, so their billing plan lines count at full value. Pipeline opportunities are scaled by their own Synergist weighting %, same as the Pipeline page's forecast. On-hold opportunities excluded.</p>
+  <p class="chart-note">Figures are gross profit (billed value minus cost), not raw billed value — live jobs are already won so count at full GP, pipeline opportunities are scaled by their own Synergist weighting %. On-hold opportunities excluded.</p>
 
   <section class="chart-section" id="cashflowSection">
-    <h2>Expected billing by month</h2>
+    <h2>Expected gross profit by month</h2>
     <div class="forecast-legend" id="cashflowLegend"></div>
     <div class="forecast-chart-wrapper">
       <div class="forecast-axis" id="cashflowAxis"></div>
@@ -37,27 +37,19 @@
 
   <section class="chart-section">
     <h2>Manual entries</h2>
-    <p class="chart-note">For income released/recognised in a month other than when it was originally billed, deferring income out of a month, or anything else not captured by Synergist's billing plan. The date here is when it should count towards the forecast above.</p>
+    <p class="chart-note">For gross profit released/recognised in a month other than when it was originally billed, deferring profit out of a month, or anything else not captured by Synergist's billing plan. The date here is when it should count towards the forecast above.</p>
     <form id="manualEntryForm" class="manual-entry-form">
       <input type="text" id="manualDescription" placeholder="Description" required>
       <input type="date" id="manualDate" required>
       <input type="number" id="manualValue" placeholder="Value (£)" step="0.01" min="0" required>
+      <input type="number" id="manualCost" placeholder="Cost (£, optional)" step="0.01" min="0">
       <select id="manualType">
         <option value="release">Release</option>
         <option value="defer">Defer</option>
       </select>
       <button type="submit" class="sync-btn">Add</button>
     </form>
-    <table class="job-table" id="manualMonthSummary">
-      <thead>
-        <tr><th>Month</th><th>Released</th><th>Deferred</th><th>Net</th></tr>
-      </thead>
-      <tbody id="manualMonthSummaryBody"></tbody>
-    </table>
-    <div class="manual-entry-tabs" id="manualEntryTabs">
-      <button type="button" class="manual-entry-tab manual-entry-tab-active" data-type="release">Released <span id="releasedTotal"></span></button>
-      <button type="button" class="manual-entry-tab" data-type="defer">Deferred <span id="deferredTotal"></span></button>
-    </div>
+    <p class="chart-note">Released total: <strong id="releasedTotal"></strong> &middot; Deferred total: <strong id="deferredTotal"></strong></p>
     <div id="manualEntryGroups"></div>
   </section>
 </main>

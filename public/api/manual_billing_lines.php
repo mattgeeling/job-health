@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description = trim($input['description'] ?? '');
     $billingDate = $input['billing_date'] ?? '';
     $value = (float) ($input['value'] ?? 0);
+    $cost = (float) ($input['cost'] ?? 0);
 
     if ($description === '' || $billingDate === '') {
         http_response_code(400);
@@ -17,12 +18,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $stmt = $pdo->prepare('INSERT INTO manual_billing_lines (description, billing_date, value) VALUES (?, ?, ?)');
-    $stmt->execute([$description, $billingDate, $value]);
+    $stmt = $pdo->prepare('INSERT INTO manual_billing_lines (description, billing_date, value, cost) VALUES (?, ?, ?, ?)');
+    $stmt->execute([$description, $billingDate, $value, $cost]);
 
     echo json_encode(['ok' => true, 'id' => (int) $pdo->lastInsertId()]);
     exit;
 }
 
-$rows = $pdo->query('SELECT id, description, billing_date, value FROM manual_billing_lines ORDER BY billing_date ASC')->fetchAll();
+$rows = $pdo->query('SELECT id, description, billing_date, value, cost FROM manual_billing_lines ORDER BY billing_date ASC')->fetchAll();
 echo json_encode(['lines' => $rows]);
