@@ -836,14 +836,14 @@ body {
 
 .pipeline-year-divider td {
   padding: 18px 12px 10px;
-  background: #efece5;
+  background: rgba(242, 196, 0, 0.28);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--ink-soft);
   border-top: 8px solid var(--bg);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2px solid #3f3f3f;
 }
 
 .delivery-days {
@@ -946,6 +946,10 @@ body {
 .forecast-swatch-maxfee { background: rgba(242, 196, 0, 0.28); border: 1px solid #f2c400; }
 .forecast-swatch-cost { background: #b23b3b; }
 
+.forecast-scroll-wrap {
+  position: relative;
+}
+
 .forecast-chart {
   display: flex;
   align-items: flex-end;
@@ -953,6 +957,29 @@ body {
   margin-top: 10px;
   overflow-x: auto;
   padding-bottom: 4px;
+}
+
+.forecast-scroll-hint {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 4px;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 4px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2430;
+  background: linear-gradient(to right, transparent, var(--surface) 70%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.forecast-scroll-hint-visible {
+  opacity: 1;
 }
 
 .forecast-bar-col {

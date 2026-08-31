@@ -113,6 +113,14 @@ function getActiveStatus() {
   return new URLSearchParams(location.search).get('status') || '';
 }
 
+function getActiveNoValue() {
+  return new URLSearchParams(location.search).get('novalue') === '1';
+}
+
+function hasNoValue(o) {
+  return o.quoted_value === null || o.quoted_value === undefined || Number(o.quoted_value) === 0;
+}
+
 function applyFilter() {
   const query = document.getElementById('pipelineSearch').value.trim().toLowerCase();
   const handler = document.getElementById('handlerFilter').value;
@@ -142,11 +150,15 @@ function applyFilter() {
     : searchFiltered.filter(o => o.status !== 'on_hold');
 
   const activeBucket = getActiveBucket();
-  const tableFiltered = activeBucket
-    ? openFiltered.filter(o => o.bucket === activeBucket)
-    : openFiltered;
+  const activeNoValue = getActiveNoValue();
+  let tableFiltered = openFiltered;
+  if (activeNoValue) {
+    tableFiltered = tableFiltered.filter(hasNoValue);
+  } else if (activeBucket) {
+    tableFiltered = tableFiltered.filter(o => o.bucket === activeBucket);
+  }
 
-  renderStats(openFiltered, activeBucket, onHoldCount, activeStatus);
+  renderStats(openFiltered, activeBucket, onHoldCount, activeStatus, activeNoValue);
   renderTable(tableFiltered);
   renderForecast(openFiltered);
 }
@@ -200,7 +212,8 @@ function renderForecast(rows) {
       <span class="forecast-legend-item"><span class="forecast-swatch forecast-swatch-maxfee"></span>Maximum fee</span>
       <span class="forecast-legend-item"><span class="forecast-swatch forecast-swatch-cost"></span>Planned cost</span>
     </div>
-    <div class="forecast-chart">
+    <div class="forecast-scroll-wrap">
+      <div class="forecast-chart" id="forecastChartScroll">
       ${months.map(m => {
         const { weighted, maxFee, cost } = byMonth[m];
         const label = formatter.format(new Date(`${m}-01T00:00:00`));
@@ -219,8 +232,28 @@ function renderForecast(rows) {
           </div>
         `;
       }).join('')}
+      </div>
+      <div class="forecast-scroll-hint" id="forecastScrollHint">&rsaquo;</div>
     </div>
   `;
+
+  initForecastScrollHint();
+}
+
+function initForecastScrollHint() {
+  const scroller = document.getElementById('forecastChartScroll');
+  const hint = document.getElementById('forecastScrollHint');
+  if (!scroller || !hint) return;
+
+  const update = () => {
+    const hasOverflow = scroller.scrollWidth > scroller.clientWidth + 1;
+    const atEnd = scroller.scrollLeft + scroller.clientWidth >= scroller.scrollWidth - 1;
+    hint.classList.toggle('forecast-scroll-hint-visible', hasOverflow && !atEnd);
+  };
+
+  scroller.addEventListener('scroll', update);
+  window.addEventListener('resize', update);
+  update();
 }
 
 function showForecastDetail(month) {
@@ -281,7 +314,7 @@ function initForecastDetail() {
   });
 }
 
-function renderStats(rows, activeBucket, onHoldCount, activeStatus) {
+function renderStats(rows, activeBucket, onHoldCount, activeStatus, activeNoValue) {
   const counts = { overdue: 0, short_term: 0, long_term: 0 };
   for (const r of rows) counts[r.bucket] = (counts[r.bucket] || 0) + 1;
   const noValueCount = rows.filter(r => r.quoted_value === null || r.quoted_value === undefined || Number(r.quoted_value) === 0).length;
@@ -305,10 +338,10 @@ function renderStats(rows, activeBucket, onHoldCount, activeStatus) {
     tile('short_term', 'Short term', 'Opportunities due within the next 6 weeks.', counts.short_term) +
     tile('long_term', 'Long term', 'Opportunities due more than 6 weeks out.', counts.long_term) +
     tile('overdue', 'Overdue', 'Due date has already passed (or no due date was ever set) without being won or lost in Synergist.', counts.overdue, counts.overdue > 0 ? 'negative' : '') +
-    `<div class="profit-tile">
+    `<a class="profit-tile bucket-tile ${activeNoValue ? 'bucket-tile-active' : ''}" href="pipeline.html?novalue=1">
       <span class="profit-label" title="Opportunities with no quoted value entered in Synergist.">No value set</span>
       <span class="profit-value ${noValueCount > 0 ? 'negative' : ''}">${noValueCount}</span>
-    </div>` +
+    </a>` +
     `<a class="profit-tile bucket-tile ${activeStatus === 'on_hold' ? 'bucket-tile-active' : ''}" href="pipeline.html?status=on_hold">
       <span class="profit-label" title="Opportunities marked On hold — hidden from the main view above. Click to see just these.">On hold</span>
       <span class="profit-value">${onHoldCount}</span>
@@ -325,6 +358,8 @@ function renderStats(rows, activeBucket, onHoldCount, activeStatus) {
   const clearEl = document.getElementById('pipelineClearFilter');
   if (activeStatus === 'on_hold') {
     clearEl.innerHTML = `Showing <strong>On hold</strong> opportunities only &middot; <a href="pipeline.html">Back to open &rarr;</a>`;
+  } else if (activeNoValue) {
+    clearEl.innerHTML = `Showing <strong>No value set</strong> opportunities only &middot; <a href="pipeline.html">Show all &rarr;</a>`;
   } else if (activeBucket) {
     clearEl.innerHTML = `Showing <strong>${BUCKET_LABEL[activeBucket]}</strong> only &middot; <a href="pipeline.html">Show all &rarr;</a>`;
   } else {
