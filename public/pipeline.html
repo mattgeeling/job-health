@@ -55,12 +55,12 @@
   </div>
   <p class="chart-note" id="pipelineClearFilter"></p>
 
-  <section class="chart-section" id="forecastSection">
-    <h2>Expected revenue by month</h2>
+  <details class="chart-section forecast-details" id="forecastSection">
+    <summary><h2>Expected revenue by month <span class="forecast-toggle-hint">(click to expand)</span></h2></summary>
     <p class="chart-note">Only includes opportunities with a Synergist billing plan attached, split across their real planned invoice months — opportunities without a billing plan aren't shown here at all. Click a month to see which opportunities make it up. On hold opportunities excluded.</p>
     <div id="forecastChart"></div>
     <div class="forecast-detail" id="forecastDetail"></div>
-  </section>
+  </details>
 
   <div class="table-scroll">
     <table class="job-table" id="pipelineTable">
