@@ -92,6 +92,12 @@ function run_job_sync(): array
         $page++;
     } while (count($batch) === 200);
 
+    $billingPlans = synergist_job_billing_plan_batch(array_column($liveJobs, 'jobNumber'));
+    $deleteJobLines = $pdo->prepare('DELETE FROM job_billing_lines WHERE job_number = ?');
+    $insertJobLine = $pdo->prepare(
+        'INSERT INTO job_billing_lines (job_number, billing_date, planned_value, planned_cost) VALUES (?, ?, ?, ?)'
+    );
+
     $synced = 0;
     foreach ($liveJobs as $job) {
         $upsertJob->execute([
@@ -109,6 +115,15 @@ function run_job_sync(): array
         $jobId = (int) $pdo->lastInsertId();
         if ($jobId === 0) {
             $jobId = (int) $pdo->query('SELECT id FROM jobs WHERE job_number = ' . $pdo->quote($job['jobNumber']))->fetchColumn();
+        }
+
+        $deleteJobLines->execute([$job['jobNumber']]);
+        foreach ($billingPlans[$job['jobNumber']] ?? [] as $line) {
+            $date = normalize_date($line['date']);
+            if ($date === null || $line['value'] == 0.0) {
+                continue;
+            }
+            $insertJobLine->execute([$job['jobNumber'], $date, $line['value'], $line['cost'] ?? 0]);
         }
 
         $fin = synergist_job_financials($job['jobNumber']);

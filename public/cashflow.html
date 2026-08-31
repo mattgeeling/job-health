@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Health — Cash flow</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-brand">
+    <img src="fuzzy-duck-logo.png" alt="Fuzzy Duck" class="topbar-logo">
+    <div>
+      <a href="index.html" class="back-link">&larr; Home</a>
+      <h1>Cash flow</h1>
+      <p class="topbar-sub">Combined billing forecast — live jobs (committed) plus pipeline opportunities (weighted)</p>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <p class="chart-note">Live jobs are already won, so their billing plan lines count at full value. Pipeline opportunities are scaled by their own Synergist weighting %, same as the Pipeline page's forecast. On-hold opportunities excluded.</p>
+
+  <section class="chart-section" id="cashflowSection">
+    <h2>Expected billing by month</h2>
+    <div class="forecast-legend" id="cashflowLegend"></div>
+    <div class="forecast-chart-wrapper">
+      <div class="forecast-axis" id="cashflowAxis"></div>
+      <div class="forecast-scroll-wrap">
+        <div class="forecast-gridlines" id="cashflowGridlines"></div>
+        <div class="forecast-chart" id="cashflowChart"></div>
+        <div class="forecast-scroll-hint" id="cashflowScrollHint">&rsaquo;</div>
+      </div>
+    </div>
+    <div class="forecast-detail" id="cashflowDetail"></div>
+  </section>
+</main>
+
+<script src="cashflow.js"></script>
+</body>
+</html>
