@@ -48,6 +48,12 @@
       </select>
       <button type="submit" class="sync-btn">Add</button>
     </form>
+    <table class="job-table" id="manualMonthSummary">
+      <thead>
+        <tr><th>Month</th><th>Released</th><th>Deferred</th><th>Net</th></tr>
+      </thead>
+      <tbody id="manualMonthSummaryBody"></tbody>
+    </table>
     <div class="manual-entry-tabs" id="manualEntryTabs">
       <button type="button" class="manual-entry-tab manual-entry-tab-active" data-type="release">Released <span id="releasedTotal"></span></button>
       <button type="button" class="manual-entry-tab" data-type="defer">Deferred <span id="deferredTotal"></span></button>

@@ -33,15 +33,18 @@ function renderChart(lines) {
       ? (line.weighting === null ? 0.5 : Number(line.weighting) / 100)
       : 1;
     const value = Number(line.planned_value || 0) * confidence;
+    const bucket = line.source === 'manual'
+      ? (value < 0 ? 'deferred' : 'released')
+      : line.source;
 
-    if (!byMonth[month]) byMonth[month] = { live: 0, pipeline: 0, manual: 0 };
-    byMonth[month][line.source] += value;
+    if (!byMonth[month]) byMonth[month] = { live: 0, pipeline: 0, released: 0, deferred: 0 };
+    byMonth[month][bucket] += value;
 
     if (!contributorsByMonth[month]) contributorsByMonth[month] = [];
     contributorsByMonth[month].push({
       job: line.job_number,
       title: line.title,
-      source: line.source,
+      source: bucket,
       value,
     });
   }
@@ -57,7 +60,7 @@ function renderChart(lines) {
   legendEl.innerHTML = `
     <span class="forecast-legend-item"><span class="forecast-swatch" style="background:#2f7a4f"></span>Live jobs (committed)</span>
     <span class="forecast-legend-item"><span class="forecast-swatch" style="background:rgba(242,196,0,0.6)"></span>Pipeline (weighted)</span>
-    <span class="forecast-legend-item"><span class="forecast-swatch" style="background:#3f6fa8"></span>Manual entries</span>
+    <span class="forecast-legend-item"><span class="forecast-swatch" style="background:#3f6fa8"></span>Released (manual)</span>
   `;
 
   if (months.length === 0) {
@@ -67,7 +70,7 @@ function renderChart(lines) {
     return;
   }
 
-  const maxValue = Math.max(...months.map(m => Math.max(byMonth[m].live, byMonth[m].pipeline, byMonth[m].manual)));
+  const maxValue = Math.max(...months.map(m => Math.max(byMonth[m].live, byMonth[m].pipeline, byMonth[m].released)));
   let step = 5000;
   while (maxValue > 0 && Math.ceil(maxValue / step) > 10) step *= 2;
   const axisMax = maxValue > 0 ? Math.ceil(maxValue / step) * step : step;
@@ -82,22 +85,22 @@ function renderChart(lines) {
   cashflowMonths = {};
 
   chartEl.innerHTML = months.map(m => {
-    const { live, pipeline, manual } = byMonth[m];
+    const { live, pipeline, released, deferred } = byMonth[m];
     const label = formatter.format(new Date(`${m}-01T00:00:00`));
-    const total = live + pipeline + manual;
-    cashflowMonths[m] = { label, live, pipeline, manual, contributors: contributorsByMonth[m] };
+    const total = live + pipeline + released + deferred;
+    cashflowMonths[m] = { label, live, pipeline, released, deferred, contributors: contributorsByMonth[m] };
     const heightPct = (v) => v <= 0 ? 0 : (axisMax > 0 ? Math.max((v / axisMax) * 100, 3) : 3);
     return `
       <div class="forecast-bar-col" data-month="${m}" tabindex="0" role="button" aria-label="Show breakdown for ${label}">
         <div class="forecast-bar-group">
           <div class="forecast-bar" style="height:${heightPct(live)}%; background:#2f7a4f;"></div>
           <div class="forecast-bar" style="height:${heightPct(pipeline)}%; background:rgba(242,196,0,0.6);"></div>
-          <div class="forecast-bar" style="height:${heightPct(manual)}%; background:#3f6fa8;"></div>
+          <div class="forecast-bar" style="height:${heightPct(released)}%; background:#3f6fa8;"></div>
         </div>
         <span class="forecast-bar-label">${label}</span>
         <span class="forecast-bar-value" style="color:#2f7a4f;">Live: ${money(live)}</span>
         <span class="forecast-bar-value" style="color:#8a6d00;">Pipeline: ${money(pipeline)}</span>
-        ${manual !== 0 ? `<span class="forecast-bar-value" style="color:#3f6fa8;">Manual: ${money(manual)}</span>` : ''}
+        ${released !== 0 ? `<span class="forecast-bar-value" style="color:#3f6fa8;">Released: ${money(released)}</span>` : ''}
         <span class="cashflow-total-divider"></span>
         <span class="forecast-bar-value cashflow-total-value">Total: ${money(total)}</span>
       </div>
@@ -141,11 +144,12 @@ function showDetail(month) {
     return;
   }
 
-  const sourceLabel = { live: 'Live', pipeline: 'Pipeline', manual: 'Manual' };
+  const sourceLabel = { live: 'Live', pipeline: 'Pipeline', released: 'Released', deferred: 'Deferred' };
+  const isManualSource = (s) => s === 'released' || s === 'deferred';
   const rows = data.contributors
     .map(c => `
       <tr>
-        <td>${c.source === 'manual' ? escapeHtml(c.title || '') : `${escapeHtml(c.job)} ${escapeHtml(c.title || '')}`}</td>
+        <td>${isManualSource(c.source) ? escapeHtml(c.title || '') : `${escapeHtml(c.job)} ${escapeHtml(c.title || '')}`}</td>
         <td>${sourceLabel[c.source] || c.source}</td>
         <td>${money(c.value)}</td>
       </tr>
@@ -158,7 +162,7 @@ function showDetail(month) {
       <thead><tr><th>Job</th><th>Source</th><th>Value</th></tr></thead>
       <tbody>${rows}</tbody>
       <tfoot>
-        <tr><td>Total</td><td></td><td>${money(data.live + data.pipeline + data.manual)}</td></tr>
+        <tr><td>Total</td><td></td><td>${money(data.live + data.pipeline + data.released + data.deferred)}</td></tr>
       </tfoot>
     </table>
   `;
@@ -197,7 +201,43 @@ async function loadManualEntries() {
   document.getElementById('deferredTotal').textContent =
     `(${money(deferred.reduce((sum, l) => sum + Number(l.value), 0))})`;
 
+  renderMonthSummary(lines);
   renderManualEntryGroups();
+}
+
+function renderMonthSummary(lines) {
+  const body = document.getElementById('manualMonthSummaryBody');
+  if (lines.length === 0) {
+    body.innerHTML = '<tr><td colspan="4" class="chart-note">No manual entries yet.</td></tr>';
+    return;
+  }
+
+  const byMonth = {};
+  for (const l of lines) {
+    const month = l.billing_date.slice(0, 7);
+    if (!byMonth[month]) byMonth[month] = { released: 0, deferred: 0 };
+    if (Number(l.value) < 0) {
+      byMonth[month].deferred += Number(l.value);
+    } else {
+      byMonth[month].released += Number(l.value);
+    }
+  }
+
+  const months = Object.keys(byMonth).sort();
+  const formatter = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' });
+
+  body.innerHTML = months.map(month => {
+    const { released, deferred } = byMonth[month];
+    const label = formatter.format(new Date(`${month}-01T00:00:00`));
+    return `
+      <tr>
+        <td>${label}</td>
+        <td>${money(released)}</td>
+        <td class="${deferred < 0 ? 'negative' : ''}">${money(deferred)}</td>
+        <td>${money(released + deferred)}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function renderManualEntryGroups() {
