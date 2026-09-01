@@ -46,6 +46,38 @@ function riskLabelFor(risk, hoursPct, netMarginPct) {
 }
 
 let currentJobNumber = null;
+let externalCostWasAdjusted = false;
+
+// Synergist's own "actual" external cost only counts a PO once it's
+// formally raised, so a job with £41k of external spend already planned
+// in its billing plan (but no PO raised yet) shows as if that cost
+// doesn't exist — badly overstating profit until someone remembers to
+// raise the PO. Use the bigger of the two (actual vs planned) so the
+// headline figures reflect the real exposure straight away; once a real
+// PO catches up to and exceeds the plan, actual takes over naturally.
+function adjustForPlannedExternalCost(latest, billingLines) {
+  if (!latest) return latest;
+  const plannedExternalTotal = billingLines.reduce((sum, l) => sum + Number(l.planned_cost || 0), 0);
+  const actualExternal = Number(latest.actual_purchase_cost || 0);
+  externalCostWasAdjusted = plannedExternalTotal > actualExternal;
+  if (!externalCostWasAdjusted) return latest;
+
+  const extraExternal = plannedExternalTotal - actualExternal;
+  const actualCost = Number(latest.actual_cost || 0) + extraExternal;
+  const quoted = Number(latest.quoted_value || 0);
+  const netMargin = quoted - actualCost;
+  const grossMargin = quoted - plannedExternalTotal;
+
+  return {
+    ...latest,
+    actual_purchase_cost: plannedExternalTotal,
+    estimate_purchase_cost: Math.max(Number(latest.estimate_purchase_cost || 0), plannedExternalTotal),
+    actual_cost: actualCost,
+    net_margin: netMargin,
+    net_margin_pct: quoted > 0 ? (netMargin / quoted) * 100 : null,
+    gross_margin: grossMargin,
+  };
+}
 
 async function loadJob() {
   const jobNumber = new URLSearchParams(location.search).get('job');
@@ -68,13 +100,17 @@ async function loadJob() {
     [job.client_name, job.handler_name, job.date_due ? `Due ${job.date_due}` : null]
       .filter(Boolean).join(' · ');
 
-  const latest = snapshots.at(-1);
+  const latest = adjustForPlannedExternalCost(snapshots.at(-1), billing_lines || []);
   const risk = !latest ? 'green'
     : Number(latest.quoted_value) <= 0 ? 'unquoted'
     : computeRisk(latest.pct_actual_vs_estimate_hours, latest.net_margin_pct);
   const badge = document.getElementById('riskBadge');
   badge.textContent = latest ? riskLabelFor(risk, latest.pct_actual_vs_estimate_hours, latest.net_margin_pct) : 'Healthy';
   badge.className = 'risk-badge risk-badge-' + risk;
+
+  document.getElementById('externalCostNote').textContent = externalCostWasAdjusted
+    ? 'External costs and profit figures include this job’s planned external cost from the billing plan, since no PO has been raised in Synergist yet — these will differ from Synergist’s own numbers until that happens.'
+    : '';
 
   renderStats(latest, risk);
   renderBurnBars(latest);
