@@ -40,13 +40,14 @@
 
     <details class="chart-section forecast-details">
       <summary><h2>Billing plan <span class="forecast-toggle-hint">(click to expand)</span></h2></summary>
-      <p class="chart-note">Planned invoice lines for this job, as set up in Synergist's billing plan.</p>
+      <p class="chart-note">Planned invoice lines for this job, as set up in Synergist's billing plan. Running profit is the cumulative total (value minus cost) up to that line — a month can dip negative on its own and still be fine if earlier months banked enough to cover it.</p>
       <table class="job-table" id="billingTable">
         <thead>
           <tr>
             <th>Date</th>
             <th>Planned value</th>
             <th>Planned cost</th>
+            <th>Running profit</th>
           </tr>
         </thead>
         <tbody id="billingTableBody"></tbody>

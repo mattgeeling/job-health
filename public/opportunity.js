@@ -97,16 +97,25 @@ function renderStats(o) {
 function renderBillingTable(lines) {
   const body = document.getElementById('billingTableBody');
   if (lines.length === 0) {
-    body.innerHTML = '<tr><td colspan="3" class="chart-note">No billing plan lines set up in Synergist for this opportunity.</td></tr>';
+    body.innerHTML = '<tr><td colspan="4" class="chart-note">No billing plan lines set up in Synergist for this opportunity.</td></tr>';
     return;
   }
-  body.innerHTML = lines.map(l => `
+  let running = 0;
+  body.innerHTML = lines.map(l => {
+    const cost = Number(l.planned_cost || 0);
+    running += Number(l.planned_value || 0) - cost;
+    const costTag = cost <= 0 ? '' : running >= 0
+      ? '<span class="pct-chip" style="background:#e7eef7;color:#3f6fa8;">Covered by prior profit</span>'
+      : '<span class="pct-chip red">Not fully covered</span>';
+    return `
     <tr>
       <td>${l.billing_date || '—'}</td>
       <td>${money(l.planned_value)}</td>
-      <td class="negative">${money(l.planned_cost)}</td>
+      <td class="negative">${money(l.planned_cost)} ${costTag}</td>
+      <td class="${running < 0 ? 'negative' : ''}">${money(running)}</td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function initNotesSaving() {
