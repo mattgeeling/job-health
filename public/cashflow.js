@@ -66,6 +66,13 @@ function escapeHtml(str) {
 }
 
 let cashflowJobActuals = {};
+let cashflowJobNotes = {};
+
+async function loadCashflowJobNotes() {
+  const res = await fetch('api/cashflow_job_notes.php');
+  const { notes } = await res.json();
+  cashflowJobNotes = notes || {};
+}
 
 async function loadCashflow() {
   const res = await fetch('api/cashflow.php');
@@ -126,6 +133,7 @@ function renderChart(lines) {
       job: line.job_number,
       title: line.title,
       source: bucket,
+      cost: Number(line.planned_cost || 0) * confidence,
       value: gp,
     });
   }
@@ -265,12 +273,18 @@ function showDetail(month) {
     if (aBottom !== bBottom) return aBottom - bBottom;
     return sortKeyFor(a).localeCompare(sortKeyFor(b));
   });
+  const totalCost = contributors.reduce((sum, c) => sum + (c.cost || 0), 0);
+  const isRealJob = (s) => s === 'live' || s === 'pipeline';
   const rows = sortedContributors
     .map(c => `
       <tr class="${rowClass[c.source] || ''}">
         <td>${escapeHtml(labelFor(c))}</td>
         <td>${sourcePill[c.source] || c.source}</td>
+        <td>${c.cost ? money(c.cost) : '—'}</td>
         <td>${money(c.value)}</td>
+        <td>${isRealJob(c.source)
+          ? `<input type="text" class="cashflow-job-note-input" data-job="${escapeHtml(c.job)}" value="${escapeHtml(cashflowJobNotes[c.job] || '')}" placeholder="Add a note…">`
+          : ''}</td>
       </tr>
     `)
     .join('');
@@ -284,10 +298,10 @@ function showDetail(month) {
       </div>
     </div>
     <table class="forecast-detail-table">
-      <thead><tr><th>Job</th><th>Source</th><th>GP</th></tr></thead>
+      <thead><tr><th>Job</th><th>Source</th><th>Costs</th><th>GP</th><th>Notes</th></tr></thead>
       <tbody>${rows}</tbody>
       <tfoot>
-        <tr><td>Total</td><td></td><td>${money(total)}</td></tr>
+        <tr><td>Total</td><td></td><td>${money(totalCost)}</td><td>${money(total)}</td><td></td></tr>
       </tfoot>
     </table>
   `;
@@ -315,6 +329,19 @@ function initDetailClicks() {
     if (!btn) return;
     cashflowDetailScope = btn.dataset.scope;
     showDetail(cashflowDetailMonth);
+  });
+
+  document.getElementById('cashflowDetail').addEventListener('change', async (e) => {
+    const input = e.target.closest('.cashflow-job-note-input');
+    if (!input) return;
+    const jobNumber = input.dataset.job;
+    const note = input.value;
+    cashflowJobNotes[jobNumber] = note;
+    await fetch('api/cashflow_job_notes.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job_number: jobNumber, note }),
+    });
   });
 }
 
@@ -546,10 +573,46 @@ function initSearch() {
   });
 }
 
+async function loadCashflowNotes() {
+  const res = await fetch('api/cashflow_notes.php');
+  const { content } = await res.json();
+  document.getElementById('cashflowNotesInput').value = content || '';
+}
+
+function initCashflowNotes() {
+  const textarea = document.getElementById('cashflowNotesInput');
+  const btn = document.getElementById('cashflowNotesSaveBtn');
+  const status = document.getElementById('cashflowNotesStatus');
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    status.textContent = 'Saving…';
+    try {
+      const res = await fetch('api/cashflow_notes.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: textarea.value }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.ok) throw new Error();
+      status.textContent = 'Saved';
+      setTimeout(() => { status.textContent = ''; }, 2000);
+    } catch (e) {
+      status.textContent = 'Failed to save — try again';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
 initDetailClicks();
 initManualEntryForm();
 initRangeToggle();
+initSourceToggle();
 initSyncButton();
 initSearch();
+initCashflowNotes();
 loadCashflow();
 loadManualEntries();
+loadCashflowNotes();
+loadCashflowJobNotes();

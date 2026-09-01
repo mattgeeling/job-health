@@ -84,6 +84,24 @@ CREATE TABLE IF NOT EXISTS job_billing_lines (
 -- though its own billing doesn't fund it. Separate table since the synced
 -- billing lines above get deleted and re-inserted on every sync and would
 -- wipe out anything stored directly on them.
+-- A single free-text scratchpad for the Cash Flow page itself (not tied to
+-- any one job) — a place to jot future-improvement ideas/to-dos. Always
+-- exactly one row.
+CREATE TABLE IF NOT EXISTS cashflow_page_notes (
+  id        TINYINT UNSIGNED PRIMARY KEY DEFAULT 1,
+  content   TEXT NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- A note per job, specific to the Cash Flow page's month-breakdown popup —
+-- deliberately separate from jobs.notes / pipeline_jobs.notes, which are
+-- pulled from/shown on the job's own page. This one is only ever set here.
+CREATE TABLE IF NOT EXISTS cashflow_job_notes (
+  job_number  VARCHAR(20) NOT NULL PRIMARY KEY,
+  note        TEXT NULL,
+  updated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS billing_plan_deferrals (
   id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   job_number        VARCHAR(20) NOT NULL,
