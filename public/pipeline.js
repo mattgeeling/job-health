@@ -541,10 +541,23 @@ function initRowNavigation() {
   });
 }
 
+function initBackLink() {
+  const link = document.getElementById('backLink');
+  if (document.referrer && new URL(document.referrer).origin === location.origin) {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      history.back();
+    });
+  } else {
+    link.href = 'index.html';
+  }
+}
+
 initSyncButton();
 initSearch();
 initNotesSaving();
 initStatusSaving();
 initForecastDetail();
 initRowNavigation();
+initBackLink();
 loadPipeline();

@@ -65,6 +65,10 @@ body {
   text-decoration: none;
 }
 
+.topbar-nav .back-link {
+  margin-right: 12px;
+}
+
 .back-link:hover {
   text-decoration: underline;
 }
