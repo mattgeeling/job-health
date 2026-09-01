@@ -223,12 +223,17 @@ function showDetail(month) {
   const isManualSource = (s) => s === 'released' || s === 'deferred' || s === 'cost' || s === 'invoiced';
   const rowClass = { released: 'cashflow-row-released', deferred: 'cashflow-row-deferred', cost: 'cashflow-row-deferred', invoiced: 'cashflow-row-released' };
   const labelFor = (c) => (isManualSource(c.source) ? c.title : `${c.job} ${c.title}`) || '';
+  // Sort by the studio's own job code (the first word of the title, e.g.
+  // "5813" or "ELEV174") rather than Synergist's own job number, which is
+  // meaningless for alphabetical ordering since almost all of them share
+  // the same "1/000..." prefix.
+  const sortKeyFor = (c) => (c.title || '').toLowerCase();
   const bottomSources = ['cost', 'released'];
   const sortedContributors = [...data.contributors].sort((a, b) => {
     const aBottom = bottomSources.includes(a.source) ? 1 : 0;
     const bBottom = bottomSources.includes(b.source) ? 1 : 0;
     if (aBottom !== bBottom) return aBottom - bBottom;
-    return labelFor(a).localeCompare(labelFor(b));
+    return sortKeyFor(a).localeCompare(sortKeyFor(b));
   });
   const rows = sortedContributors
     .map(c => `
