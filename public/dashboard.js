@@ -273,6 +273,7 @@ function renderTable(jobs) {
       <td>${escapeHtml(j.handler_name || '')}</td>
       <td>${j.date_due || '—'}</td>
       <td>${money(j.quoted_value)}</td>
+      <td>${money(j.actual_cost)}</td>
       <td class="${j.net_margin < 0 ? 'negative' : ''}"><strong>${money(j.net_margin)}</strong></td>
       <td class="${j.net_margin_pct !== null && j.net_margin_pct < 0 ? 'negative' : ''}"><strong>${pct(j.net_margin_pct)}</strong></td>
       <td>${j.actual_hours ?? '—'} / ${j.estimate_hours ?? '—'}</td>

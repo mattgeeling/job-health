@@ -10,7 +10,7 @@ $lastSyncedAt = $pdo->query('SELECT MAX(last_synced_at) FROM jobs')->fetchColumn
 $rows = $pdo->query(
     'SELECT j.id, j.job_number, j.title, j.client_name, j.handler_name, j.date_due, j.notes,
             s.snapshot_date, s.quoted_value, s.estimate_hours, s.actual_hours,
-            s.gross_margin, s.net_margin, s.gross_margin_pct, s.net_margin_pct,
+            s.actual_cost, s.gross_margin, s.net_margin, s.gross_margin_pct, s.net_margin_pct,
             s.pct_actual_vs_estimate_hours, s.pct_actual_vs_estimate_cost
      FROM jobs j
      JOIN job_snapshots s ON s.job_id = j.id
