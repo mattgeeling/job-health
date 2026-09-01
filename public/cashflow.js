@@ -208,19 +208,31 @@ function initScrollHint() {
   update();
 }
 
+let cashflowDetailMonth = null;
+let cashflowDetailScope = 'both';
+
 function showDetail(month) {
   const chartEl = document.getElementById('cashflowChart');
   const detailEl = document.getElementById('cashflowDetail');
-  const data = cashflowMonths[month];
+
+  if (month !== undefined) cashflowDetailMonth = month;
+  const data = cashflowMonths[cashflowDetailMonth];
 
   chartEl.querySelectorAll('.forecast-bar-col').forEach(col => {
-    col.classList.toggle('forecast-bar-col-active', col.dataset.month === month);
+    col.classList.toggle('forecast-bar-col-active', col.dataset.month === cashflowDetailMonth);
   });
 
   if (!data) {
     detailEl.innerHTML = '';
     return;
   }
+
+  const contributors = cashflowDetailScope === 'live'
+    ? data.contributors.filter(c => c.source !== 'pipeline')
+    : data.contributors;
+  const total = cashflowDetailScope === 'live'
+    ? data.live + data.released + data.deferred + data.cost + data.invoiced
+    : data.live + data.pipeline + data.released + data.deferred + data.cost + data.invoiced;
 
   const sourcePill = {
     live: '<span class="pct-chip green">Live</span>',
@@ -238,8 +250,8 @@ function showDetail(month) {
   // meaningless for alphabetical ordering since almost all of them share
   // the same "1/000..." prefix.
   const sortKeyFor = (c) => (c.title || '').toLowerCase();
-  const bottomSources = ['cost', 'released'];
-  const sortedContributors = [...data.contributors].sort((a, b) => {
+  const bottomSources = ['cost', 'released', 'deferred'];
+  const sortedContributors = [...contributors].sort((a, b) => {
     const aBottom = bottomSources.includes(a.source) ? 1 : 0;
     const bBottom = bottomSources.includes(b.source) ? 1 : 0;
     if (aBottom !== bBottom) return aBottom - bBottom;
@@ -256,12 +268,18 @@ function showDetail(month) {
     .join('');
 
   detailEl.innerHTML = `
-    <h3 class="forecast-detail-title">${data.label}</h3>
+    <div class="cashflow-detail-header">
+      <h3 class="forecast-detail-title">${data.label}</h3>
+      <div class="cashflow-range-toggle" id="cashflowDetailScopeToggle">
+        <button type="button" class="cashflow-range-btn ${cashflowDetailScope === 'live' ? 'cashflow-range-btn-active' : ''}" data-scope="live">Live</button>
+        <button type="button" class="cashflow-range-btn ${cashflowDetailScope === 'both' ? 'cashflow-range-btn-active' : ''}" data-scope="both">Live + Proposed</button>
+      </div>
+    </div>
     <table class="forecast-detail-table">
       <thead><tr><th>Job</th><th>Source</th><th>GP</th></tr></thead>
       <tbody>${rows}</tbody>
       <tfoot>
-        <tr><td>Total</td><td></td><td>${money(data.live + data.pipeline + data.released + data.deferred + data.cost + data.invoiced)}</td></tr>
+        <tr><td>Total</td><td></td><td>${money(total)}</td></tr>
       </tfoot>
     </table>
   `;
@@ -282,6 +300,13 @@ function initDetailClicks() {
     e.preventDefault();
     const isActive = col.classList.contains('forecast-bar-col-active');
     showDetail(isActive ? null : col.dataset.month);
+  });
+
+  document.getElementById('cashflowDetail').addEventListener('click', (e) => {
+    const btn = e.target.closest('#cashflowDetailScopeToggle .cashflow-range-btn');
+    if (!btn) return;
+    cashflowDetailScope = btn.dataset.scope;
+    showDetail(cashflowDetailMonth);
   });
 }
 

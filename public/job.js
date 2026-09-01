@@ -3,6 +3,12 @@ function moneyStr(v) {
   return '£' + Number(v).toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
+function monthLabel(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(`${dateStr}T00:00:00`);
+  return d.toLocaleDateString('en-GB', { month: 'long', year: '2-digit' });
+}
+
 function pctStr(v) {
   if (v === null || v === undefined) return '—';
   return Number(v).toFixed(0) + '%';
@@ -73,7 +79,7 @@ async function loadJob() {
   renderStats(latest, risk);
   renderBurnBars(latest);
   renderDeliveryLine(latest);
-  renderBillingTable(billing_lines || []);
+  loadBillingPlan(jobNumber, billing_lines || []);
   document.getElementById('notesInput').value = job.notes || '';
 
   loadPhases(jobNumber);
@@ -81,28 +87,69 @@ async function loadJob() {
   initNarrative(jobNumber);
 }
 
-function renderBillingTable(lines) {
+let billingPlanLines = [];
+let billingPlanJobNumber = null;
+
+async function loadBillingPlan(jobNumber, lines) {
+  billingPlanJobNumber = jobNumber;
+  billingPlanLines = lines;
+
+  const res = await fetch('api/billing_deferral.php?job=' + encodeURIComponent(jobNumber));
+  const { deferrals } = await res.json();
+  renderBillingTable(lines, deferrals || {});
+}
+
+function renderBillingTable(lines, deferrals) {
   const body = document.getElementById('billingTableBody');
   if (lines.length === 0) {
-    body.innerHTML = '<tr><td colspan="4" class="chart-note">No billing plan lines set up in Synergist for this job.</td></tr>';
+    body.innerHTML = '<tr><td colspan="8" class="chart-note">No billing plan lines set up in Synergist for this job.</td></tr>';
     return;
   }
-  let running = 0;
+  let balance = 0;
   body.innerHTML = lines.map(l => {
+    const value = Number(l.planned_value || 0);
     const cost = Number(l.planned_cost || 0);
-    running += Number(l.planned_value || 0) - cost;
-    const costTag = cost <= 0 ? '' : running >= 0
-      ? '<span class="pct-chip" style="background:#e7eef7;color:#3f6fa8;">Covered by prior profit</span>'
-      : '<span class="pct-chip red">Not fully covered</span>';
+    const fullGp = value - cost;
+    const gpRecognised = Object.prototype.hasOwnProperty.call(deferrals, l.billing_date)
+      ? deferrals[l.billing_date]
+      : fullGp;
+    const revenueRecognised = gpRecognised + cost;
+    const deferredAdded = Math.max(0, value - revenueRecognised);
+    const deferredReleased = Math.max(0, revenueRecognised - value);
+    balance += deferredAdded - deferredReleased;
+
     return `
-    <tr>
-      <td>${l.billing_date || '—'}</td>
-      <td>${moneyStr(l.planned_value)}</td>
-      <td class="negative">${moneyStr(l.planned_cost)} ${costTag}</td>
-      <td class="${running < 0 ? 'negative' : ''}">${moneyStr(running)}</td>
+    <tr data-billing-date="${l.billing_date}">
+      <td>${monthLabel(l.billing_date)}</td>
+      <td>${moneyStr(value)}</td>
+      <td class="negative">${moneyStr(cost)}</td>
+      <td><input type="number" class="gp-recognised-input" step="0.01" value="${gpRecognised.toFixed(2)}" data-date="${l.billing_date}"></td>
+      <td>${deferredAdded > 0 ? moneyStr(deferredAdded) : '—'}</td>
+      <td class="${deferredReleased > 0 ? 'negative' : ''}">${deferredReleased > 0 ? moneyStr(deferredReleased) : '—'}</td>
+      <td>${moneyStr(revenueRecognised)}</td>
+      <td class="${balance < 0 ? 'negative' : ''}">${moneyStr(balance)}</td>
     </tr>
   `;
   }).join('');
+}
+
+function initBillingPlanSaving() {
+  document.getElementById('billingTableBody').addEventListener('blur', async (e) => {
+    if (!e.target.classList || !e.target.classList.contains('gp-recognised-input')) return;
+    const input = e.target;
+    const billingDate = input.dataset.date;
+    const gpRecognised = Number(input.value || 0);
+
+    await fetch('api/billing_deferral.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job_number: billingPlanJobNumber, billing_date: billingDate, gp_recognised: gpRecognised }),
+    });
+
+    const res = await fetch('api/billing_deferral.php?job=' + encodeURIComponent(billingPlanJobNumber));
+    const { deferrals } = await res.json();
+    renderBillingTable(billingPlanLines, deferrals || {});
+  }, true);
 }
 
 async function loadPhases(jobNumber) {
@@ -356,4 +403,5 @@ function initBackLink() {
 
 initNotes();
 initBackLink();
+initBillingPlanSaving();
 loadJob();

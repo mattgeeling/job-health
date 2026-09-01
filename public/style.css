@@ -1465,7 +1465,8 @@ body {
   background: var(--red-bg);
 }
 
-.cashflow-chart-header {
+.cashflow-chart-header,
+.cashflow-detail-header {
   display: flex;
   align-items: center;
   justify-content: space-between;

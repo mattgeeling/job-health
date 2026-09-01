@@ -78,6 +78,21 @@ CREATE TABLE IF NOT EXISTS job_billing_lines (
   INDEX idx_job_number (job_number)
 ) ENGINE=InnoDB;
 
+-- How much GP the user has chosen to recognise on each billing-plan line —
+-- the rest of that line's value is deferred into (or drawn from) a running
+-- pot, which is what lets a cost-heavy line still show as "covered" even
+-- though its own billing doesn't fund it. Separate table since the synced
+-- billing lines above get deleted and re-inserted on every sync and would
+-- wipe out anything stored directly on them.
+CREATE TABLE IF NOT EXISTS billing_plan_deferrals (
+  id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  job_number        VARCHAR(20) NOT NULL,
+  billing_date      DATE NOT NULL,
+  gp_recognised     DECIMAL(12,2) NOT NULL DEFAULT 0,
+  updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_job_date (job_number, billing_date)
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS manual_billing_lines (
   id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   description       VARCHAR(255) NOT NULL,

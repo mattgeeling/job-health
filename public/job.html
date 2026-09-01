@@ -40,14 +40,18 @@
 
     <details class="chart-section forecast-details">
       <summary><h2>Billing plan <span class="forecast-toggle-hint">(click to expand)</span></h2></summary>
-      <p class="chart-note">Planned invoice lines for this job, as set up in Synergist's billing plan. Running profit is the cumulative total (value minus cost) up to that line — a month can dip negative on its own and still be fine if earlier months banked enough to cover it.</p>
+      <p class="chart-note"><strong>Job list GP</strong> is editable — how much profit to recognise that period. If it needs more revenue than that month bills, the shortfall shows under Released (drawn from prior months); if it needs less, the leftover shows under Deferred (held back for a later month).</p>
       <table class="job-table" id="billingTable">
         <thead>
           <tr>
             <th>Date</th>
-            <th>Planned value</th>
-            <th>Planned cost</th>
-            <th>Running profit</th>
+            <th>New billing</th>
+            <th>Cost</th>
+            <th>Job list GP</th>
+            <th>Deferred</th>
+            <th>Released</th>
+            <th>Revenue recognised</th>
+            <th>Deferred balance</th>
           </tr>
         </thead>
         <tbody id="billingTableBody"></tbody>
