@@ -54,7 +54,7 @@ async function loadJob() {
     document.getElementById('jobTitle').textContent = 'Job not found';
     return;
   }
-  const { job, snapshots } = await res.json();
+  const { job, snapshots, billing_lines } = await res.json();
 
   document.title = `${job.job_number} — Job Health`;
   document.getElementById('jobTitle').textContent = `${job.job_number} — ${job.title || 'Untitled'}`;
@@ -73,11 +73,27 @@ async function loadJob() {
   renderStats(latest, risk);
   renderBurnBars(latest);
   renderDeliveryLine(latest);
+  renderBillingTable(billing_lines || []);
   document.getElementById('notesInput').value = job.notes || '';
 
   loadPhases(jobNumber);
   loadCostTransactions(jobNumber);
   initNarrative(jobNumber);
+}
+
+function renderBillingTable(lines) {
+  const body = document.getElementById('billingTableBody');
+  if (lines.length === 0) {
+    body.innerHTML = '<tr><td colspan="3" class="chart-note">No billing plan lines set up in Synergist for this job.</td></tr>';
+    return;
+  }
+  body.innerHTML = lines.map(l => `
+    <tr>
+      <td>${l.billing_date || '—'}</td>
+      <td>${moneyStr(l.planned_value)}</td>
+      <td class="negative">${moneyStr(l.planned_cost)}</td>
+    </tr>
+  `).join('');
 }
 
 async function loadPhases(jobNumber) {
@@ -319,5 +335,16 @@ function renderStats(latest, risk) {
   `;
 }
 
+function initBackLink() {
+  const link = document.getElementById('backLink');
+  if (document.referrer && new URL(document.referrer).origin === location.origin) {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      history.back();
+    });
+  }
+}
+
 initNotes();
+initBackLink();
 loadJob();

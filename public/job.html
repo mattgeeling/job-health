@@ -11,7 +11,7 @@
   <div class="topbar-brand">
     <img src="fuzzy-duck-logo.png" alt="Fuzzy Duck" class="topbar-logo">
     <div>
-      <a href="dashboard.html" class="back-link">&larr; All jobs</a>
+      <a href="dashboard.html" class="back-link" id="backLink">&larr; Back</a>
       <div class="job-title-row">
         <h1 id="jobTitle">Loading…</h1>
         <span class="risk-badge" id="riskBadge"></span>
@@ -38,8 +38,23 @@
       <div class="burn-bars" id="burnBars"></div>
     </section>
 
-    <section class="chart-section">
-      <h2>Stage breakdown</h2>
+    <details class="chart-section forecast-details">
+      <summary><h2>Billing plan <span class="forecast-toggle-hint">(click to expand)</span></h2></summary>
+      <p class="chart-note">Planned invoice lines for this job, as set up in Synergist's billing plan.</p>
+      <table class="job-table" id="billingTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Planned value</th>
+            <th>Planned cost</th>
+          </tr>
+        </thead>
+        <tbody id="billingTableBody"></tbody>
+      </table>
+    </details>
+
+    <details class="chart-section forecast-details">
+      <summary><h2>Stage breakdown <span class="forecast-toggle-hint">(click to expand)</span></h2></summary>
       <table class="job-table phase-table" id="phaseTable">
         <thead>
           <tr>
@@ -53,10 +68,10 @@
         <tbody id="phaseTableBody"></tbody>
       </table>
       <p class="chart-note" id="phaseNote"></p>
-    </section>
+    </details>
 
-    <section class="chart-section">
-      <h2>Cost line items</h2>
+    <details class="chart-section forecast-details">
+      <summary><h2>Cost line items <span class="forecast-toggle-hint">(click to expand)</span></h2></summary>
       <p class="chart-note">Expense/purchase transactions logged directly against this job — excludes time. Rows marked "pending" are purchase orders raised but not yet invoiced, shown at their estimated value; they aren't counted in any actual cost or margin figure above.</p>
       <table class="job-table" id="costTable">
         <thead>
@@ -69,7 +84,7 @@
         </thead>
         <tbody id="costTableBody"></tbody>
       </table>
-    </section>
+    </details>
   </div>
 
   <aside class="notes-panel">

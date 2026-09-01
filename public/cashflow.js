@@ -3,42 +3,52 @@ let cashflowLines = [];
 let cashflowRange = '3';
 let cashflowSearchTerm = '';
 
-function getFilteredLines() {
-  if (!cashflowSearchTerm) return cashflowLines;
-  const q = cashflowSearchTerm.toLowerCase();
-  return cashflowLines.filter(l =>
-    (l.job_number !== null && String(l.job_number).toLowerCase().includes(q)) ||
+function matchesSearch(l, q) {
+  return (l.job_number !== null && String(l.job_number).toLowerCase().includes(q)) ||
     (l.title && l.title.toLowerCase().includes(q)) ||
-    (l.client_name && l.client_name.toLowerCase().includes(q))
-  );
+    (l.client_name && l.client_name.toLowerCase().includes(q));
 }
 
-function updateProjectLink(lines) {
-  const el = document.getElementById('cashflowProjectLink');
-  const jobLines = lines.filter(l => l.source === 'live' || l.source === 'pipeline');
-  const uniqueJobs = [...new Map(jobLines.map(l => [l.job_number, l])).values()];
+function renderSearchResults() {
+  const section = document.getElementById('cashflowSearchResultsSection');
+  const container = document.getElementById('cashflowSearchResults');
 
-  if (!cashflowSearchTerm || uniqueJobs.length !== 1) {
-    el.innerHTML = '';
+  if (!cashflowSearchTerm) {
+    section.hidden = true;
+    container.innerHTML = '';
     return;
   }
 
-  const job = uniqueJobs[0];
-  const href = job.source === 'live'
-    ? `job.html?job=${encodeURIComponent(job.job_number)}`
-    : `opportunity.html?job=${encodeURIComponent(job.job_number)}`;
-
-  const totalPlannedValue = jobLines.reduce((sum, l) => sum + Number(l.planned_value || 0), 0);
-  const actuals = cashflowJobActuals[job.job_number];
-
-  let spendInfo = '';
-  if (job.source === 'live' && actuals) {
-    spendInfo = ` &middot; Billing plan total: ${money(totalPlannedValue)} &middot; Actual spend to date: ${money(actuals.actual_cost)}`;
-  } else {
-    spendInfo = ` &middot; Billing plan total: ${money(totalPlannedValue)}`;
+  const q = cashflowSearchTerm.toLowerCase();
+  const jobLines = cashflowLines.filter(l => (l.source === 'live' || l.source === 'pipeline') && matchesSearch(l, q));
+  const byJob = new Map();
+  for (const l of jobLines) {
+    if (!byJob.has(l.job_number)) byJob.set(l.job_number, { ...l, totalValue: 0 });
+    byJob.get(l.job_number).totalValue += Number(l.planned_value || 0);
   }
 
-  el.innerHTML = `Viewing <strong>${escapeHtml(job.job_number)} — ${escapeHtml(job.title || '')}</strong>${spendInfo} &middot; <a href="${href}">Go to project &rarr;</a>`;
+  section.hidden = false;
+
+  if (byJob.size === 0) {
+    container.innerHTML = '<p class="chart-note">No projects match that search.</p>';
+    return;
+  }
+
+  container.innerHTML = [...byJob.values()].map(job => {
+    const href = job.source === 'live'
+      ? `job.html?job=${encodeURIComponent(job.job_number)}`
+      : `opportunity.html?job=${encodeURIComponent(job.job_number)}`;
+    const actuals = cashflowJobActuals[job.job_number];
+    const spendInfo = job.source === 'live' && actuals
+      ? ` &middot; Actual spend to date: ${money(actuals.actual_cost)}`
+      : '';
+    return `
+      <a class="cashflow-search-result" href="${href}">
+        <span class="cashflow-search-result-title">${escapeHtml(job.job_number)} — ${escapeHtml(job.title || '')}</span>
+        <span class="cashflow-search-result-meta">${escapeHtml(job.client_name || '')} &middot; Billing plan total: ${money(job.totalValue)}${spendInfo}</span>
+      </a>
+    `;
+  }).join('');
 }
 
 function money(v) {
@@ -61,8 +71,8 @@ async function loadCashflow() {
   const { lines, job_actuals } = await res.json();
   cashflowLines = lines;
   cashflowJobActuals = job_actuals || {};
-  renderChart(getFilteredLines());
-  updateProjectLink(getFilteredLines());
+  renderChart(cashflowLines);
+  renderSearchResults();
 }
 
 // The books for a month stay open for about a week into the next one, so
@@ -284,14 +294,6 @@ function gp(l) {
 async function loadManualEntries() {
   const res = await fetch('api/manual_billing_lines.php');
   const { lines } = await res.json();
-
-  const releasedTotal = lines.filter(l => l.type === 'release').reduce((sum, l) => sum + gp(l), 0);
-  const deferredTotal = lines.filter(l => l.type === 'defer').reduce((sum, l) => sum + gp(l), 0);
-  const invoicedTotal = lines.filter(l => l.type === 'invoice').reduce((sum, l) => sum + gp(l), 0);
-  document.getElementById('releasedTotal').textContent = money(releasedTotal);
-  document.getElementById('deferredTotal').textContent = money(deferredTotal);
-  document.getElementById('invoicedTotal').textContent = money(invoicedTotal);
-
   renderManualEntryGroups(lines);
 }
 
@@ -486,16 +488,14 @@ function initRangeToggle() {
     document.querySelectorAll('.cashflow-range-btn').forEach(b =>
       b.classList.toggle('cashflow-range-btn-active', b === btn)
     );
-    renderChart(getFilteredLines());
+    renderChart(cashflowLines);
   });
 }
 
 function initSearch() {
   document.getElementById('cashflowSearch').addEventListener('input', (e) => {
     cashflowSearchTerm = e.target.value.trim();
-    const filtered = getFilteredLines();
-    renderChart(filtered);
-    updateProjectLink(filtered);
+    renderSearchResults();
   });
 }
 

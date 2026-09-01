@@ -104,7 +104,7 @@ function renderBillingTable(lines) {
     <tr>
       <td>${l.billing_date || '—'}</td>
       <td>${money(l.planned_value)}</td>
-      <td>${money(l.planned_cost)}</td>
+      <td class="negative">${money(l.planned_cost)}</td>
     </tr>
   `).join('');
 }
@@ -131,4 +131,15 @@ function initNotesSaving() {
   });
 }
 
+function initBackLink() {
+  const link = document.getElementById('backLink');
+  if (document.referrer && new URL(document.referrer).origin === location.origin) {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      history.back();
+    });
+  }
+}
+
+initBackLink();
 loadOpportunity();

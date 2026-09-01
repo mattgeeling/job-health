@@ -24,7 +24,6 @@
     <button id="syncBtn" class="sync-btn" type="button">Sync now</button>
     <span class="sync-status" id="syncStatus"></span>
   </div>
-  <p class="chart-note" id="cashflowProjectLink"></p>
   <p class="chart-note">Figures are gross profit (billed value minus cost), not raw billed value — live jobs are already won so count at full GP, pipeline opportunities are scaled by their own Synergist weighting %. On-hold opportunities excluded.</p>
 
   <section class="chart-section" id="cashflowSection">
@@ -48,8 +47,13 @@
     <div class="forecast-detail" id="cashflowDetail"></div>
   </section>
 
-  <section class="chart-section">
-    <h2>Manual entries</h2>
+  <section class="chart-section" id="cashflowSearchResultsSection" hidden>
+    <h2>Search results</h2>
+    <div id="cashflowSearchResults"></div>
+  </section>
+
+  <details class="chart-section forecast-details">
+    <summary><h2>Manual entries <span class="forecast-toggle-hint">(click to expand)</span></h2></summary>
     <p class="chart-note">For gross profit released/recognised in a month other than when it was originally billed, deferring profit out of a month, or anything else not captured by Synergist's billing plan. The date here is when it should count towards the forecast above.</p>
     <form id="manualEntryForm" class="manual-entry-form">
       <input type="text" id="manualDescription" placeholder="Description" required>
@@ -64,9 +68,8 @@
       <input type="number" id="manualCost" placeholder="Cost (£)" step="0.01" min="0">
       <button type="submit" class="sync-btn">Add</button>
     </form>
-    <p class="chart-note">Released total: <strong id="releasedTotal"></strong> &middot; Deferred total: <strong id="deferredTotal"></strong> &middot; Invoiced total: <strong id="invoicedTotal"></strong></p>
     <div id="manualEntryGroups"></div>
-  </section>
+  </details>
 </main>
 
 <script src="cashflow.js"></script>

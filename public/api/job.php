@@ -35,7 +35,14 @@ $stmt = $pdo->prepare(
 $stmt->execute([$job['id']]);
 $snapshots = $stmt->fetchAll();
 
+$stmt = $pdo->prepare(
+    'SELECT billing_date, planned_value, planned_cost FROM job_billing_lines WHERE job_number = ? ORDER BY billing_date ASC'
+);
+$stmt->execute([$jobNumber]);
+$billingLines = $stmt->fetchAll();
+
 echo json_encode([
     'job' => $job,
     'snapshots' => $snapshots,
+    'billing_lines' => $billingLines,
 ]);
