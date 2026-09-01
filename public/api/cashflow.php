@@ -6,12 +6,17 @@ require_once __DIR__ . '/../../lib/db.php';
 $pdo = db();
 
 // Live jobs: real, committed billing plan lines — already won, counted at
-// full value.
+// full value. Where a job's own Billing Plan page has set a Job list GP
+// override for that month (billing_plan_deferrals), use it in place of the
+// raw new-billing-minus-cost figure, so Cash Flow automatically reflects
+// deferred/released revenue instead of needing a separate manual entry.
 $liveLines = $pdo->query(
     'SELECT j.job_number, j.title, j.client_name, NULL AS weighting,
-            l.billing_date, l.planned_value, l.planned_cost
+            l.billing_date, l.planned_value, l.planned_cost, d.gp_recognised AS gp_override
      FROM job_billing_lines l
      JOIN jobs j ON j.job_number = l.job_number
+     LEFT JOIN billing_plan_deferrals d
+            ON d.job_number = l.job_number AND d.billing_date = l.billing_date
      WHERE j.is_active = 1'
 )->fetchAll();
 foreach ($liveLines as &$row) {
@@ -21,12 +26,15 @@ unset($row);
 
 // Pipeline opportunities: not yet won — on-hold excluded, matching the
 // pipeline page's own forecast chart. Weighting is left for the front-end
-// to apply, same as pipeline.js does.
+// to apply, same as pipeline.js does. GP overrides aren't editable from the
+// opportunity page yet, but the join is harmless if none exist.
 $pipelineLines = $pdo->query(
     'SELECT p.job_number, p.title, p.client_name, p.weighting,
-            l.billing_date, l.planned_value, l.planned_cost
+            l.billing_date, l.planned_value, l.planned_cost, d.gp_recognised AS gp_override
      FROM pipeline_billing_lines l
      JOIN pipeline_jobs p ON p.job_number = l.job_number
+     LEFT JOIN billing_plan_deferrals d
+            ON d.job_number = l.job_number AND d.billing_date = l.billing_date
      WHERE p.is_active = 1 AND (p.status IS NULL OR p.status != \'on_hold\')'
 )->fetchAll();
 foreach ($pipelineLines as &$row) {

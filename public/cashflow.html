@@ -29,10 +29,16 @@
   <section class="chart-section" id="cashflowSection">
     <div class="cashflow-chart-header">
       <h2>Expected gross profit by month</h2>
-      <div class="cashflow-range-toggle" id="cashflowRangeToggle">
-        <button type="button" class="cashflow-range-btn" data-range="1">1 month</button>
-        <button type="button" class="cashflow-range-btn cashflow-range-btn-active" data-range="3">3 months</button>
-        <button type="button" class="cashflow-range-btn" data-range="all">All</button>
+      <div class="cashflow-chart-toggles">
+        <div class="cashflow-range-toggle" id="cashflowSourceToggle">
+          <button type="button" class="cashflow-range-btn cashflow-range-btn-active" data-source="all">Live + Proposed</button>
+          <button type="button" class="cashflow-range-btn" data-source="live">Live only</button>
+        </div>
+        <div class="cashflow-range-toggle" id="cashflowRangeToggle">
+          <button type="button" class="cashflow-range-btn" data-range="1">1 month</button>
+          <button type="button" class="cashflow-range-btn cashflow-range-btn-active" data-range="3">3 months</button>
+          <button type="button" class="cashflow-range-btn" data-range="all">All</button>
+        </div>
       </div>
     </div>
     <div class="forecast-legend" id="cashflowLegend"></div>

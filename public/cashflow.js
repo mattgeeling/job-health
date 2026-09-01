@@ -1,6 +1,7 @@
 let cashflowMonths = {};
 let cashflowLines = [];
 let cashflowRange = '3';
+let cashflowSource = 'all';
 let cashflowSearchTerm = '';
 
 function matchesSearch(l, q) {
@@ -97,6 +98,7 @@ function renderChart(lines) {
 
   for (const line of lines) {
     if (!line.billing_date) continue;
+    if (cashflowSource === 'live' && line.source === 'pipeline') continue;
     const month = line.billing_date.slice(0, 7);
     if (month < currentMonth) continue;
 
@@ -105,8 +107,14 @@ function renderChart(lines) {
       : 1;
     // Gross profit — revenue minus cost — is the figure that actually
     // matters here (matches how this is tracked on the studio's own
-    // spreadsheet), not raw billed value.
-    const gp = (Number(line.planned_value || 0) - Number(line.planned_cost || 0)) * confidence;
+    // spreadsheet), not raw billed value. If the job's own Billing Plan page
+    // has set a Job list GP for this month, that already encodes any
+    // deferred/released revenue decision — use it instead of the raw
+    // billing-minus-cost figure so this chart stays in sync automatically.
+    const gpBase = (line.gp_override !== null && line.gp_override !== undefined)
+      ? Number(line.gp_override)
+      : (Number(line.planned_value || 0) - Number(line.planned_cost || 0));
+    const gp = gpBase * confidence;
     const manualBucket = { release: 'released', defer: 'deferred', cost: 'cost', invoice: 'invoiced' };
     const bucket = line.source === 'manual' ? (manualBucket[line.type] || 'released') : line.source;
 
@@ -506,11 +514,25 @@ function initSyncButton() {
 }
 
 function initRangeToggle() {
-  document.getElementById('cashflowRangeToggle').addEventListener('click', (e) => {
+  const group = document.getElementById('cashflowRangeToggle');
+  group.addEventListener('click', (e) => {
     const btn = e.target.closest('.cashflow-range-btn');
     if (!btn) return;
     cashflowRange = btn.dataset.range;
-    document.querySelectorAll('.cashflow-range-btn').forEach(b =>
+    group.querySelectorAll('.cashflow-range-btn').forEach(b =>
+      b.classList.toggle('cashflow-range-btn-active', b === btn)
+    );
+    renderChart(cashflowLines);
+  });
+}
+
+function initSourceToggle() {
+  const group = document.getElementById('cashflowSourceToggle');
+  group.addEventListener('click', (e) => {
+    const btn = e.target.closest('.cashflow-range-btn');
+    if (!btn) return;
+    cashflowSource = btn.dataset.source;
+    group.querySelectorAll('.cashflow-range-btn').forEach(b =>
       b.classList.toggle('cashflow-range-btn-active', b === btn)
     );
     renderChart(cashflowLines);

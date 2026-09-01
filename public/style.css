@@ -1478,6 +1478,13 @@ body {
   flex-wrap: wrap;
 }
 
+.cashflow-chart-toggles {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .cashflow-chart-header h2 {
   margin: 0;
 }
