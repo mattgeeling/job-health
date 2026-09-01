@@ -42,21 +42,23 @@
     <details class="chart-section forecast-details">
       <summary><h2>Billing plan <span class="forecast-toggle-hint">(click to expand)</span></h2></summary>
       <p class="chart-note"><strong>Job list GP</strong> is editable — how much profit to recognise that period. If it needs more revenue than that month bills, the shortfall shows under Released (drawn from prior months); if it needs less, the leftover shows under Deferred (held back for a later month).</p>
-      <table class="job-table" id="billingTable">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>New billing</th>
-            <th>Cost</th>
-            <th>Job list GP</th>
-            <th>Deferred</th>
-            <th>Released</th>
-            <th>Revenue recognised</th>
-            <th>Deferred balance</th>
-          </tr>
-        </thead>
-        <tbody id="billingTableBody"></tbody>
-      </table>
+      <div class="table-scroll">
+        <table class="job-table" id="billingTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>New billing</th>
+              <th>Cost</th>
+              <th>Job list GP</th>
+              <th>Deferred</th>
+              <th>Released</th>
+              <th>Revenue recognised</th>
+              <th>Deferred balance</th>
+            </tr>
+          </thead>
+          <tbody id="billingTableBody"></tbody>
+        </table>
+      </div>
     </details>
 
     <details class="chart-section forecast-details">
