@@ -47,4 +47,26 @@ foreach ($manualLines as &$row) {
 }
 unset($row);
 
-echo json_encode(['lines' => array_merge($liveLines, $pipelineLines, $manualLines)]);
+// Latest actual spend per live job, so a single project can be checked
+// against its billing plan — most recent snapshot per job_id, picked in
+// PHP rather than a correlated subquery for clarity.
+$jobActuals = [];
+$snapshotRows = $pdo->query(
+    'SELECT j.job_number, s.snapshot_date, s.actual_cost, s.estimate_cost, s.quoted_value
+     FROM job_snapshots s
+     JOIN jobs j ON j.id = s.job_id
+     WHERE j.is_active = 1
+     ORDER BY s.snapshot_date ASC'
+)->fetchAll();
+foreach ($snapshotRows as $row) {
+    $jobActuals[$row['job_number']] = [
+        'actual_cost' => (float) $row['actual_cost'],
+        'estimate_cost' => (float) $row['estimate_cost'],
+        'quoted_value' => (float) $row['quoted_value'],
+    ];
+}
+
+echo json_encode([
+    'lines' => array_merge($liveLines, $pipelineLines, $manualLines),
+    'job_actuals' => $jobActuals,
+]);

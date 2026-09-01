@@ -1,6 +1,45 @@
 let cashflowMonths = {};
 let cashflowLines = [];
 let cashflowRange = '3';
+let cashflowSearchTerm = '';
+
+function getFilteredLines() {
+  if (!cashflowSearchTerm) return cashflowLines;
+  const q = cashflowSearchTerm.toLowerCase();
+  return cashflowLines.filter(l =>
+    (l.job_number !== null && String(l.job_number).toLowerCase().includes(q)) ||
+    (l.title && l.title.toLowerCase().includes(q)) ||
+    (l.client_name && l.client_name.toLowerCase().includes(q))
+  );
+}
+
+function updateProjectLink(lines) {
+  const el = document.getElementById('cashflowProjectLink');
+  const jobLines = lines.filter(l => l.source === 'live' || l.source === 'pipeline');
+  const uniqueJobs = [...new Map(jobLines.map(l => [l.job_number, l])).values()];
+
+  if (!cashflowSearchTerm || uniqueJobs.length !== 1) {
+    el.innerHTML = '';
+    return;
+  }
+
+  const job = uniqueJobs[0];
+  const href = job.source === 'live'
+    ? `job.html?job=${encodeURIComponent(job.job_number)}`
+    : `opportunity.html?job=${encodeURIComponent(job.job_number)}`;
+
+  const totalPlannedValue = jobLines.reduce((sum, l) => sum + Number(l.planned_value || 0), 0);
+  const actuals = cashflowJobActuals[job.job_number];
+
+  let spendInfo = '';
+  if (job.source === 'live' && actuals) {
+    spendInfo = ` &middot; Billing plan total: ${money(totalPlannedValue)} &middot; Actual spend to date: ${money(actuals.actual_cost)}`;
+  } else {
+    spendInfo = ` &middot; Billing plan total: ${money(totalPlannedValue)}`;
+  }
+
+  el.innerHTML = `Viewing <strong>${escapeHtml(job.job_number)} — ${escapeHtml(job.title || '')}</strong>${spendInfo} &middot; <a href="${href}">Go to project &rarr;</a>`;
+}
 
 function money(v) {
   if (v === null || v === undefined) return '—';
@@ -15,17 +54,36 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+let cashflowJobActuals = {};
+
 async function loadCashflow() {
   const res = await fetch('api/cashflow.php');
-  const { lines } = await res.json();
+  const { lines, job_actuals } = await res.json();
   cashflowLines = lines;
-  renderChart(cashflowLines);
+  cashflowJobActuals = job_actuals || {};
+  renderChart(getFilteredLines());
+  updateProjectLink(getFilteredLines());
+}
+
+// The books for a month stay open for about a week into the next one, so
+// don't drop last month from the chart the instant the calendar flips —
+// keep showing it until the first Monday of the new month.
+function getEffectiveCurrentMonth() {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = today.getMonth();
+  const d = today.getDate();
+  const dowOfFirst = new Date(y, m, 1).getDay();
+  const firstMondayDate = 1 + ((8 - dowOfFirst) % 7);
+
+  const effective = d < firstMondayDate ? new Date(y, m - 1, 1) : new Date(y, m, 1);
+  return `${effective.getFullYear()}-${String(effective.getMonth() + 1).padStart(2, '0')}`;
 }
 
 function renderChart(lines) {
   const byMonth = {};
   const contributorsByMonth = {};
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentMonth = getEffectiveCurrentMonth();
 
   for (const line of lines) {
     if (!line.billing_date) continue;
@@ -423,7 +481,16 @@ function initRangeToggle() {
     document.querySelectorAll('.cashflow-range-btn').forEach(b =>
       b.classList.toggle('cashflow-range-btn-active', b === btn)
     );
-    renderChart(cashflowLines);
+    renderChart(getFilteredLines());
+  });
+}
+
+function initSearch() {
+  document.getElementById('cashflowSearch').addEventListener('input', (e) => {
+    cashflowSearchTerm = e.target.value.trim();
+    const filtered = getFilteredLines();
+    renderChart(filtered);
+    updateProjectLink(filtered);
   });
 }
 
@@ -431,5 +498,6 @@ initDetailClicks();
 initManualEntryForm();
 initRangeToggle();
 initSyncButton();
+initSearch();
 loadCashflow();
 loadManualEntries();
